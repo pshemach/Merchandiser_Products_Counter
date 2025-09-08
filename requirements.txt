@@ -1,0 +1,9 @@
+ipykernel
+numpy
+ultralytics
+fastapi[all]
+faiss-cpu
+from_root
+Pillow
+opencv-python
+transformers
