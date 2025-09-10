@@ -7,3 +7,4 @@ from_root
 Pillow
 opencv-python
 transformers
+open_clip_torch
