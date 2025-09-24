@@ -33,3 +33,11 @@ class ObjectDetectionError(ProductCountingException):
         self.image_shape = image_shape
         self.model_name = model_name
         super().__init__(message)
+        
+class CatalogError(ProductCountingException):
+    """Raised when catalog manage fail"""
+    def __init__(self, message: str, product_id: Optional[str] = None,
+                 operation: Optional[str] = None):
+        self.product_id = product_id
+        self.operation = operation
+        super.__init__(message)
