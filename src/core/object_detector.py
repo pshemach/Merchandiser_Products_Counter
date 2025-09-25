@@ -1,7 +1,7 @@
 import torch
 import logging
 import cv2
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Optional
 from pathlib import Path
 from ultralytics import YOLO
 import numpy as np
@@ -138,3 +138,92 @@ class YOLODetector:
             raise ObjectDetectionError(f"Could not load image: {image_path}")
         
         return self.detect(image=image, **kwargs)
+    
+    def batch_detect(self, images: List[np.ndarray], **kwargs) -> List[List[Detection]]:
+        """Detect objects in batch of images"""
+        results = []
+        
+        with PerformanceLogger(logger, f"Batch detection on {len(images)} images"):
+            for i, image in enumerate(images):
+                try:
+                    detections = self.detect(image, **kwargs)
+                    results.append(detections)
+                except Exception as e:
+                    logger.error(f"Failed to detect objects in image {i}: {e}")
+                    results.append([])  # Empty list for failed detection
+        
+        return results
+    
+    def filter_detections(self, detections: List[Detection], 
+                         min_area: int = 100, max_area: Optional[int] = None,
+                         allowed_classes: Optional[List[int]] = None) -> List[Detection]:
+        """Filter detections based on criteria"""
+        filtered = []
+        
+        for detection in detections:
+            # Filter by area
+            if detection.area < min_area:
+                continue
+            if max_area is not None and detection.area > max_area:
+                continue
+            
+            # Filter by class
+            if allowed_classes is not None and detection.class_id not in allowed_classes:
+                continue
+            
+            filtered.append(detection)
+        
+        logger.debug(f"Filtered detections: {len(filtered)}/{len(detections)} kept")
+        return filtered
+    
+    def visualize_detections(self, image: np.ndarray, detections: List[Detection],
+                           show_confidence: bool = True, thickness: int = 2) -> np.ndarray:
+        """Draw bounding boxes on image"""
+        vis_image = image.copy()
+        
+        for detection in detections:
+            x1, y1, x2, y2 = detection.bbox
+            
+            # Draw bounding box
+            cv2.rectangle(vis_image, (x1, y1), (x2, y2), (0, 255, 0), thickness)
+            
+            # Draw label
+            label = detection.class_name
+            if show_confidence:
+                label += f" {detection.confidence:.2f}"
+            
+            # Calculate label size and position
+            (label_w, label_h), baseline = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1
+            )
+            
+            # Draw label background
+            cv2.rectangle(
+                vis_image,
+                (x1, y1 - label_h - baseline - 5),
+                (x1 + label_w, y1),
+                (0, 255, 0),
+                -1
+            )
+            
+            # Draw label text
+            cv2.putText(
+                vis_image,
+                label,
+                (x1, y1 - baseline - 2),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 0, 0),
+                1
+            )
+        
+        return vis_image
+    
+    def get_model_info(self) -> Dict[str, any]:
+        """Get model information"""
+        return {
+            'model_name': self.model_name,
+            'device': self.device,
+            'num_classes': len(self.class_names),
+            'class_names': self.class_names
+        }

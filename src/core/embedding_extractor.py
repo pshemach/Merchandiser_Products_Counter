@@ -4,11 +4,13 @@ import cv2
 import numpy as np
 from PIL import Image
 from pathlib import Path
+from typing import Optional, List, Dict, Tuple
 from collections import deque
 from transformers import AutoImageProcessor, AutoModel
 from src.utils.file_utils import save_pickle, load_pickle
 from src.utils.image_utils import validate_image
 from src.exceptions.core_exceptions import EmbeddingExtractionError
+from src.utils.logging_utils import PerformanceLogger
 
 logger = logging.getLogger(__name__)
 
@@ -185,3 +187,82 @@ class ImprovedEmbeddingExtractor:
         else:
             logger.warning("No catalog embedding failed to L2 normalization")
             return torch.nn.functional.normalize(embedding, dim=0)
+        
+        
+    def add_catalog_embedding(self, embedding: np.ndarray) -> None:
+        """Add embedding to catalog for normalization"""
+        self.catalog_embeddings.append(embedding.copy())
+        logger.debug(f"Added catalog embedding. Total: {len(self.catalog_embeddings)}")
+    
+    def set_catalog_embeddings(self, embeddings: List[np.ndarray]) -> None:
+        """Set catalog embeddings for normalization"""
+        self.catalog_embeddings = [emb.copy() for emb in embeddings]
+        logger.info(f"Set catalog embeddings: {len(self.catalog_embeddings)} embeddings")
+    
+    def batch_extract(self, images: List[np.ndarray]) -> List[np.ndarray]:
+        """Extract embeddings from batch of images"""
+        embeddings = []
+        
+        with PerformanceLogger(logger, f"Batch embedding extraction on {len(images)} images"):
+            for i, image in enumerate(images):
+                try:
+                    embedding = self.extract_embedding(image)
+                    embeddings.append(embedding)
+                except Exception as e:
+                    logger.error(f"Failed to extract embedding from image {i}: {e}")
+                    # Add zero embedding for failed extraction
+                    embeddings.append(np.zeros(self.embedding_dim, dtype=np.float32))
+        
+        return embeddings
+    
+    def save_state(self, filepath: Path) -> None:
+        """Save extractor state"""
+        state = {
+            'model_name': self.model_name,
+            'normalization_strategy': self.normalization_strategy,
+            'embedding_dim': self.embedding_dim,
+            'stats': {
+                'mean': self.stats.mean,
+                'std': self.stats.std,
+                'count': self.stats.count
+            },
+            'catalog_embeddings': self.catalog_embeddings
+        }
+        save_pickle(state, filepath)
+        logger.info(f"Saved extractor state to {filepath}")
+    
+    def load_state(self, filepath: Path) -> None:
+        """Load extractor state"""
+        try:
+            state = load_pickle(filepath)
+            
+            # Validate compatibility
+            if state['model_name'] != self.model_name:
+                logger.warning(f"Model name mismatch: {state['model_name']} vs {self.model_name}")
+            
+            # Load statistics
+            if state['stats']['mean'] is not None:
+                self.stats.mean = state['stats']['mean']
+                self.stats.std = state['stats']['std']
+                self.stats.count = state['stats']['count']
+            
+            # Load catalog embeddings
+            self.catalog_embeddings = state['catalog_embeddings']
+            
+            logger.info(f"Loaded extractor state from {filepath}")
+            
+        except Exception as e:
+            logger.error(f"Failed to load extractor state: {e}")
+            raise
+    
+    def get_stats_summary(self) -> Dict[str, any]:
+        """Get summary of extractor statistics"""
+        return {
+            'model_name': self.model_name,
+            'normalization_strategy': self.normalization_strategy,
+            'embedding_dimension': self.embedding_dim,
+            'device': self.device,
+            'catalog_embeddings_count': len(self.catalog_embeddings),
+            'stats_samples': self.stats.count,
+            'stats_available': self.stats.mean is not None
+        }
