@@ -133,7 +133,6 @@ class YOLODetector:
     def detect_from_file(self, image_path: Path, **kwargs) -> List[Detection]:
         """Detect objects from file"""
         image = cv2.imread(str(image_path))
-        
         if image is None:
             raise ObjectDetectionError(f"Could not load image: {image_path}")
         
@@ -182,7 +181,7 @@ class YOLODetector:
         vis_image = image.copy()
         
         for detection in detections:
-            x1, y1, x2, y2 = detection.bbox
+            x1, y1, x2, y2 = map(int, detection.bbox)  # Ensure integer coordinates
             
             # Draw bounding box
             cv2.rectangle(vis_image, (x1, y1), (x2, y2), (0, 255, 0), thickness)

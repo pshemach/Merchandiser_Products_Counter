@@ -6,5 +6,6 @@ faiss-cpu
 from_root
 Pillow
 opencv-python
-transformers
+transformers==4.50.0
 open_clip_torch
+pydantic

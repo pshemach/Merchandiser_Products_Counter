@@ -15,6 +15,7 @@ dependencies = [
     "opencv-python>=4.11.0.86",
     "pandas>=2.3.2",
     "pillow>=11.3.0",
+    "pydantic>=2.11.7",
     "sentence-transformers>=5.1.0",
     "transformers==4.50.0",
     "ultralytics>=8.3.191",
