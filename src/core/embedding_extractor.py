@@ -78,7 +78,7 @@ class EmbeddingStats:
         
 class ImprovedEmbeddingExtractor:
     """Advanced embedding extraction with multiple normalization strategies"""
-    def __init__(self, model_name: str = 'facebook/dinov2-base',
+    def __init__(self, model_name: str = 'facebook/dinov2-large',
                  normalization_strategy: str = 'catalog_norm',
                  device: str = 'auto'):
         self.model_name = model_name

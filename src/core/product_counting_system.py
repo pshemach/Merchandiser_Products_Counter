@@ -80,7 +80,8 @@ class ProductCountingSystem:
         
         # Default configuration
         default_config = {
-            'yolo_model': 'yolov8n.pt',
+            'yolo_model_dir':"data/models/yolo_weights",
+            'yolo_model_name': 'yolov9.pt',
             'embedding_model': 'facebook/dinov2-base', 
             'normalization_strategy': 'catalog_norm',
             'similarity_threshold': 0.8,
@@ -116,8 +117,9 @@ class ProductCountingSystem:
             with PerformanceLogger(logger, "System initialization"):
                 # Initialize object detector
                 logger.info("Loading YOLO detector...")
+                model_path = self.config['yolo_model_dir'] / self.config['yolo_model_name']
                 self.detector = YOLODetector(
-                    model_name=self.config['yolo_model'],
+                    model_name=model_path,
                     device=self.config['device']
                 )
                 
