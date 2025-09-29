@@ -124,7 +124,7 @@ class ImprovedEmbeddingExtractor:
             dummy_output = self.model(dummy_input)
             self.embedding_dim = dummy_output.last_hidden_state.shape[-1]
             
-        logger.info(f"✅ Embedding model loaded: {self.embedding_dim}D embeddings")
+        logger.info(f"Embedding model loaded: {self.embedding_dim}D embeddings")
         
     def extract_raw_embedding(self, image:np.ndarray) -> torch.Tensor:
         """Extract raw embedding without normalization"""
@@ -165,7 +165,7 @@ class ImprovedEmbeddingExtractor:
                 normalized_embedding = embedding_np
                 
             elif self.normalization_strategy == 'individual':
-                normalized_embedding = torch.nn.functional.normalize(embedding_np, dim=0)
+                normalized_embedding = embedding_np / (np.linalg.norm(embedding_np) + 1e-8)
                 
             elif self.normalization_strategy == 'catalog_norm':
                 normalized_embedding = self._catalog_normalize(embedding_np)
@@ -186,7 +186,7 @@ class ImprovedEmbeddingExtractor:
             return normalized_embedding
         else:
             logger.warning("No catalog embedding failed to L2 normalization")
-            return torch.nn.functional.normalize(embedding, dim=0)
+            return embedding / (np.linalg.norm(embedding) + 1e-8)
         
         
     def add_catalog_embedding(self, embedding: np.ndarray) -> None:

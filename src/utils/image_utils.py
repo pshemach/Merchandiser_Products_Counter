@@ -116,7 +116,7 @@ def enhance_image(image:np.ndarray, brightness: float=1.0,
 def crop_image(image: np.ndarray, bbox: Tuple[int, int, int, int]) -> np.ndarray:
     """Crop image using bounding box (x1, y1, x2, y2)"""
     try:
-        x1, y1, x2, y2 = bbox
+        x1, y1, x2, y2 = map(int, bbox)
         
         # Ensure coordinates are within image bounds
         h, w = image.shape[:2]

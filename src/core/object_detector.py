@@ -113,7 +113,7 @@ class YOLODetector:
                             cls = int(box.cls[0].cpu().numpy())
                             
                             detection = Detection(
-                                bbox=(xyxy[0], xyxy[1], xyxy[2], xyxy[3]),
+                                bbox=((xyxy[0]), xyxy[1], xyxy[2], xyxy[3]),
                                 confidence=conf,
                                 class_id=cls,
                                 class_name=self.class_names.get(cls, f"class_{cls}")
