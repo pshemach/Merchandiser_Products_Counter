@@ -7,7 +7,7 @@ import logging
 import json
 import time
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.product_counting_system import ProductCountingSystem
 from src.utils.logging_utils import setup_logging, PerformanceLogger
@@ -157,7 +157,7 @@ class CatalogBuilder:
                 self.logger.info(f"Build statistics saved to: {stats_file}")
                 
         except Exception as e:
-            self.logger.error(f"❌ Failed to save system state: {e}")
+            self.logger.error(f"Failed to save system state: {e}")
             raise
     
     def print_summary(self) -> None:
@@ -197,7 +197,7 @@ def main():
     """Main function"""
     
     # Define default configuration
-    images_dir = Path("data/images")
+    images_dir = Path("data/reference_images")
     output_dir = Path("results")
     config_env = "development"
     log_level = "INFO"

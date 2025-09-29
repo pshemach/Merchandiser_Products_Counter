@@ -13,7 +13,7 @@ logger=logging.getLogger(__name__)
 def main():
     setting = get_settings()
     config = setting.dict()
-    image_dir = Path('data/db')
+    image_dir = Path('data/reference_images')
     output_dir = Path('results')
     
     with PerformanceLogger(logger, "Product counting system"):

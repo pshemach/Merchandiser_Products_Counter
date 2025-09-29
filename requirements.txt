@@ -10,3 +10,4 @@ transformers==4.50.0
 open_clip_torch
 pydantic
 pydantic-settings
+aiofiles
