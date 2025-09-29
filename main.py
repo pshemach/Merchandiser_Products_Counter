@@ -14,6 +14,7 @@ def main():
     setting = get_settings()
     config = setting.dict()
     image_dir = Path('data/db')
+    output_dir = Path('results')
     
     with PerformanceLogger(logger, "Product counting system"):
         pcs = ProductCountingSystem(config) 
@@ -28,7 +29,7 @@ def main():
                 products[product_id] = image_files
         
         for product_id, image_paths in products.items():
-            product_name = product_id.replace('_', ' ').replace('-', ' ').title()
+            product_name = product_id
             product_info = pcs.add_product_to_catalog(
                             product_id=product_id,
                             name=product_name,
@@ -37,8 +38,7 @@ def main():
                             description=f"Product {product_name} with {len(image_paths)} reference images"
                         )
             
-        print(product_info)
-
+        pcs.save_system_state(output_dir)
 
 if __name__ == "__main__":
     main()

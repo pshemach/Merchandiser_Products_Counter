@@ -7,6 +7,12 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Path):
+            return str(obj)
+        return super().default(obj)
+
 def ensure_dir(directory:Path) -> Path:
     """Ensure directory exists, create if it does not"""
     directory = Path(directory)
@@ -32,12 +38,12 @@ def save_json(data: Dict[str, Any], filepath: Path, indent: int=2) -> None:
     """Save data to JSON file"""
     try:
         ensure_dir(Path(filepath).parent)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=indent, ensure_ascii=False)
+        with open(str(filepath), 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=indent, ensure_ascii=False, cls=EnhancedJSONEncoder)
         logger.debug(f"Saved JSON to {filepath}")
     except Exception as e:
         logger.error(f"Failed to save JSON to {filepath}: {e}")
-        raise 
+        raise
     
 def save_pickle(data: Any, filepath: Path) -> None:
     try:
@@ -77,7 +83,7 @@ def list_images(directory: Path, extensions: List[str]=None) -> List[Path]:
     images = []
     for ext in extensions:
         images.extend(directory.glob(f"*{ext}"))
-        images.extend(directory.glob(f"*{ext.upper()}"))
+        # images.extend(directory.glob(f"*{ext.upper()}"))
         
     logger.info(f"Found {len(images)} images in {directory}")
     return sorted(images)

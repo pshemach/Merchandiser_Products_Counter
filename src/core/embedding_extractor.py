@@ -180,8 +180,8 @@ class ImprovedEmbeddingExtractor:
         """Normalize using catalog statistics"""
         if len(self.catalog_embeddings) > 0:
             catalog_array = np.array(self.catalog_embeddings)
-            catalog_mean = np.mean(catalog_array, dim=0)
-            catalog_std = np.std(catalog_array, dim=0)
+            catalog_mean = np.mean(catalog_array, axis=0)
+            catalog_std = np.std(catalog_array, axis=0)
             normalized_embedding = (embedding - catalog_mean) / catalog_std
             return normalized_embedding
         else:

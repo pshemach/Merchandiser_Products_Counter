@@ -161,7 +161,6 @@ class ProductCountingSystem:
                 # Add product to catalog manager
                 product_info = self.catalog_manager.add_product(product_id=product_id, name=name,
                                                         reference_images=image_paths, **kwargs)
-                
                 # Process reference images and create embeddings
                 embeddings = []
                 for image_path in image_paths:

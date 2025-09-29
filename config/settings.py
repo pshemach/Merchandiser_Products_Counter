@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     )
     
     normalization_strategy: str = Field(
-        default="catalog_norm",
+        default="individual",
         description="Embedding normalization strategy"
     )
     

@@ -39,11 +39,11 @@ class CatalogBuilder:
             with PerformanceLogger(self.logger, "System initialization"):
                 self.system = ProductCountingSystem(config=self.settings.dict())
             
-            self.logger.info("✅ System initialized successfully")
+            self.logger.info("System initialized successfully")
             return True
             
         except Exception as e:
-            self.logger.error(f"❌ System initialization failed: {e}")
+            self.logger.error(f"System initialization failed: {e}")
             raise SystemInitializationError(f"Failed to initialize system: {e}")
     
     def scan_images_directory(self, images_dir: Path) -> Dict[str, List[Path]]:
@@ -68,11 +68,11 @@ class CatalogBuilder:
                 self.stats['products_found'] += 1
                 self.stats['total_images'] += len(image_files)
                 
-                self.logger.info(f"📁 Found product '{product_id}': {len(image_files)} images")
+                self.logger.info(f"Found product '{product_id}': {len(image_files)} images")
             else:
-                self.logger.warning(f"⚠️  Skipping '{product_id}': no valid images found")
+                self.logger.warning(f"Skipping '{product_id}': no valid images found")
         
-        self.logger.info(f"📊 Scan complete: {len(products)} products, {self.stats['total_images']} total images")
+        self.logger.info(f"Scan complete: {len(products)} products, {self.stats['total_images']} total images")
         return products
     
     def build_catalog_from_products(self, products: Dict[str, List[Path]], 
@@ -92,14 +92,14 @@ class CatalogBuilder:
                     try:
                         # Check if product already exists
                         if not force_rebuild and self.system.catalog_manager.get_product(product_id):
-                            self.logger.info(f"⏭️  Skipping existing product: {product_id}")
+                            self.logger.info(f"Skipping existing product: {product_id}")
                             continue
                         
                         # Prepare product name
                         product_name = product_id.replace('_', ' ').replace('-', ' ').title()
                         
                         # Add product to catalog
-                        self.logger.info(f"🔄 Processing product: {product_id}")
+                        self.logger.info(f"Processing product: {product_id}")
                         
                         product_info = self.system.add_product_to_catalog(
                             product_id=product_id,
@@ -112,20 +112,20 @@ class CatalogBuilder:
                         self.stats['products_added'] += 1
                         self.stats['total_embeddings'] += len(product_info.embedding_indices)
                         
-                        self.logger.info(f"✅ Added product: {product_id} ({len(product_info.embedding_indices)} embeddings)")
+                        self.logger.info(f"Added product: {product_id} ({len(product_info.embedding_indices)} embeddings)")
                         
                     except Exception as e:
                         self.stats['products_failed'] += 1
-                        self.logger.error(f"❌ Failed to add product {product_id}: {e}")
+                        self.logger.error(f"Failed to add product {product_id}: {e}")
                         continue
                 
                 self.stats['processing_time'] = time.time() - start_time
                 
                 if self.stats['products_added'] > 0:
-                    self.logger.info("✅ Catalog building completed successfully")
+                    self.logger.info("Catalog building completed successfully")
                     return True
                 else:
-                    self.logger.warning("⚠️  No products were added to catalog")
+                    self.logger.warning("No products were added to catalog")
                     return False
                     
         except Exception as e:
@@ -153,8 +153,8 @@ class CatalogBuilder:
                 
                 save_json(build_info, stats_file)
                 
-                self.logger.info(f"💾 System state saved to: {output_dir}")
-                self.logger.info(f"📊 Build statistics saved to: {stats_file}")
+                self.logger.info(f"System state saved to: {output_dir}")
+                self.logger.info(f"Build statistics saved to: {stats_file}")
                 
         except Exception as e:
             self.logger.error(f"❌ Failed to save system state: {e}")
@@ -164,7 +164,7 @@ class CatalogBuilder:
         """Print build summary"""
         
         print("\n" + "="*60)
-        print("📋 CATALOG BUILD SUMMARY")
+        print("CATALOG BUILD SUMMARY")
         print("="*60)
         
         print(f"Products found:      {self.stats['products_found']}")
@@ -181,11 +181,12 @@ class CatalogBuilder:
         print("="*60)
         
         if self.stats['products_added'] == 0:
-            print("❌ No products were successfully added to catalog")
+            print("No products were successfully added to catalog")
         elif self.stats['products_failed'] == 0:
-            print("✅ All products processed successfully!")
+            print("All products processed successfully!")
         else:
-            print(f"⚠️  {self.stats['products_failed']} products failed to process")
+            print(f"{self.stats['products_failed']} products failed to process")
+
 
 def signal_handler(signum, frame):
     """Handle interrupt signals gracefully"""
@@ -195,90 +196,48 @@ def signal_handler(signum, frame):
 def main():
     """Main function"""
     
-    parser = argparse.ArgumentParser(
-        description='Build product catalog from reference images',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
-    )
-    
-    parser.add_argument(
-        '--images-dir', 
-        type=Path, 
-        required=True,
-        help='Directory containing product image folders'
-    )
-    
-    parser.add_argument(
-        '--output-dir', 
-        type=Path, 
-        required=True,
-        help='Output directory for catalog and system state'
-    )
-    
-    parser.add_argument(
-        '--config', 
-        type=str, 
-        default='development',
-        choices=['development', 'testing', 'staging', 'production'],
-        help='Configuration environment (default: development)'
-    )
-    
-    parser.add_argument(
-        '--log-level', 
-        type=str, 
-        default='INFO',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        help='Logging level (default: INFO)'
-    )
-    
-    parser.add_argument(
-        '--force-rebuild', 
-        action='store_true',
-        help='Force rebuild even if products already exist'
-    )
-    
-    parser.add_argument(
-        '--dry-run', 
-        action='store_true',
-        help='Scan directory but don\'t build catalog'
-    )
-    
-    args = parser.parse_args()
+    # Define default configuration
+    images_dir = Path("data/db")
+    output_dir = Path("results")
+    config_env = "development"
+    log_level = "INFO"
+    force_rebuild = False
+    dry_run = False
     
     # Setup signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
     # Setup logging
-    log_file = args.output_dir / "build_catalog.log" if not args.dry_run else None
+    log_file = output_dir / "build_catalog.log" if not dry_run else None
     setup_logging(
-        log_level=args.log_level,
+        log_level=log_level,
         log_file=log_file
     )
     
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info("🚀 Starting catalog build process")
-        logger.info(f"Images directory: {args.images_dir}")
-        logger.info(f"Output directory: {args.output_dir}")
-        logger.info(f"Configuration: {args.config}")
-        logger.info(f"Force rebuild: {args.force_rebuild}")
-        logger.info(f"Dry run: {args.dry_run}")
+        logger.info("Starting catalog build process")
+        logger.info(f"Images directory: {images_dir}")
+        logger.info(f"Output directory: {output_dir}")
+        logger.info(f"Configuration: {config_env}")
+        logger.info(f"Force rebuild: {force_rebuild}")
+        logger.info(f"Dry run: {dry_run}")
         
         # Initialize builder
-        builder = CatalogBuilder(config_env=args.config)
+        builder = CatalogBuilder(config_env=config_env)
         
         # Scan images directory
-        products = builder.scan_images_directory(args.images_dir)
+        products = builder.scan_images_directory(images_dir)
         
         if not products:
-            logger.error("❌ No products found in images directory")
+            logger.error("No products found in images directory")
             return 1
         
         # Dry run mode
-        if args.dry_run:
-            logger.info("🔍 Dry run mode - scanning only")
+        if dry_run:
+            logger.info("Dry run mode - scanning only")
             builder.print_summary()
             return 0
         
@@ -289,27 +248,27 @@ def main():
         # Build catalog
         success = builder.build_catalog_from_products(
             products=products,
-            force_rebuild=args.force_rebuild
+            force_rebuild=force_rebuild
         )
         
         if success:
             # Save system state
-            builder.save_catalog_and_system(args.output_dir)
+            builder.save_catalog_and_system(output_dir)
             
             # Print summary
             builder.print_summary()
             
-            logger.info("🎉 Catalog build completed successfully!")
+            logger.info("Catalog build completed successfully!")
             return 0
         else:
-            logger.error("❌ Catalog build failed")
+            logger.error("Catalog build failed")
             return 1
         
     except KeyboardInterrupt:
         logger.info("Build process interrupted by user")
         return 1
     except Exception as e:
-        logger.error(f"❌ Build process failed: {e}", exc_info=True)
+        logger.error(f"Build process failed: {e}", exc_info=True)
         return 1
 
 if __name__ == "__main__":
