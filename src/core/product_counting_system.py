@@ -245,7 +245,7 @@ class ProductCountingSystem:
                         cropped_image = crop_image(image, detection.bbox)
                         # Extract embedding 
                         embedding = self.embedding_extractor.extract_embedding(cropped_image)
-                        
+            
                         # Find similar products
                         matches = self.similarity_matcher.search(
                             query_embedding=embedding,
@@ -256,6 +256,7 @@ class ProductCountingSystem:
                         if matches:
                             # Use best match
                             best_match = matches[0]
+                    
                             result.add_matched_detection(detection=detection,
                                                          match=best_match)   
                             logger.debug(f"Detection {i}: matched {best_match.product_id} "
@@ -334,7 +335,7 @@ class ProductCountingSystem:
                 detection = match_info['detection']
                 match = match_info['match']
                 
-                x1, y1, x2, y2 = detection.bbox
+                x1, y1, x2, y2 = map(int, detection.bbox)
                 
                 # Draw bounding box
                 cv2.rectangle(vis_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -353,7 +354,7 @@ class ProductCountingSystem:
             
             # Draw unmatched detections in red
             for detection in result.unmatched_detections:
-                x1, y1, x2, y2 = detection.bbox
+                x1, y1, x2, y2 = map(int, detection.bbox)
                 cv2.rectangle(vis_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 cv2.putText(vis_image, "Unknown", (x1, y1 - 10),
                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
@@ -464,7 +465,7 @@ class ProductCountingSystem:
                     self.catalog_manager.load_catalog(catalog_file)
                 
                 # Load similarity index
-                index_file = directory / "similarity_index.faiss"
+                index_file = directory / "similarity_index.fiass"
                 if index_file.exists() and self.similarity_matcher:
                     self.similarity_matcher.load_index(index_file)
                 

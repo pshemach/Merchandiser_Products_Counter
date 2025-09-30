@@ -103,15 +103,18 @@ def validate_bounding_box(bbox: tuple, image_shape: tuple) -> bool:
         h, w = image_shape[:2]
         
         # Check coordinates are numeric
-        if not all(isinstance(coord, (int, float)) for coord in bbox):
-            return False
+        # if not all(isinstance(coord, (int, float, )) for coord in bbox):
+        #     print("Check coordinates are numeric is False")
+        #     return False
         
         # Check coordinates are within image bounds
         if not (0 <= x1 < w and 0 <= x2 <= w and 0 <= y1 < h and 0 <= y2 <= h):
+            print("Check coordinates are within image bounds is False")
             return False
         
         # Check box has positive area
         if x2 <= x1 or y2 <= y1:
+            print("Check box has positive area is False")
             return False
         
         return True

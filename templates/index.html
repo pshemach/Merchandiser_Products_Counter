@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Merchandiser Products Counter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+      <h1 class="text-3xl font-bold text-center mb-6">
+        Merchandiser Products Counter
+      </h1>
+
+      <!-- Tabs -->
+      <div class="flex justify-center mb-4">
+        <button
+          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          data-tab="create"
+        >
+          Create Product
+        </button>
+        <button
+          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          data-tab="list"
+        >
+          List Products
+        </button>
+        <button
+          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          data-tab="count"
+        >
+          Count Products
+        </button>
+        <button
+          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          data-tab="batch"
+        >
+          Batch Count
+        </button>
+        <button
+          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          data-tab="stats"
+        >
+          Stats & Export
+        </button>
+      </div>
+
+      <!-- Create Product -->
+      <div id="create" class="tab-content hidden">
+        <h2 class="text-2xl font-semibold mb-4">Create New Product</h2>
+        <form
+          id="create-product-form"
+          enctype="multipart/form-data"
+          class="bg-white p-6 rounded shadow-md"
+        >
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Product ID</label
+            >
+            <input
+              type="text"
+              name="product_id"
+              class="mt-1 p-2 w-full border rounded"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              type="text"
+              name="name"
+              class="mt-1 p-2 w-full border rounded"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Category</label
+            >
+            <input
+              type="text"
+              name="category"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Description</label
+            >
+            <textarea
+              name="description"
+              class="mt-1 p-2 w-full border rounded"
+            ></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Barcode</label
+            >
+            <input
+              type="text"
+              name="barcode"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Price</label>
+            <input
+              type="number"
+              name="price"
+              step="0.01"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Reference Images</label
+            >
+            <input
+              type="file"
+              name="images"
+              multiple
+              accept="image/*"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Create Product
+          </button>
+        </form>
+        <div id="create-result" class="mt-4"></div>
+      </div>
+
+      <!-- List Products -->
+      <div id="list" class="tab-content hidden">
+        <h2 class="text-2xl font-semibold mb-4">Product Catalog</h2>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700"
+            >Filter by Category</label
+          >
+          <input
+            type="text"
+            id="category-filter"
+            class="mt-1 p-2 w-full border rounded"
+          />
+        </div>
+        <div id="products-list" class="bg-white p-6 rounded shadow-md"></div>
+      </div>
+
+      <!-- Count Products -->
+      <div id="count" class="tab-content hidden">
+        <h2 class="text-2xl font-semibold mb-4">Count Products in Image</h2>
+        <form
+          id="count-form"
+          enctype="multipart/form-data"
+          class="bg-white p-6 rounded shadow-md"
+        >
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Image</label>
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              class="mt-1 p-2 w-full border rounded"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Confidence Threshold (0-1)</label
+            >
+            <input
+              type="number"
+              name="confidence_threshold"
+              step="0.01"
+              min="0"
+              max="1"
+              value="0.5"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Similarity Threshold (0-1)</label
+            >
+            <input
+              type="number"
+              name="similarity_threshold"
+              step="0.01"
+              min="0"
+              max="1"
+              value="0.8"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="return_visualization"
+                class="form-checkbox"
+              />
+              <span class="ml-2">Return Visualization</span>
+            </label>
+          </div>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="return_all_detections"
+                class="form-checkbox"
+              />
+              <span class="ml-2">Return All Detections</span>
+            </label>
+          </div>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="return_bounding_boxes"
+                class="form-checkbox"
+              />
+              <span class="ml-2">Return Bounding Boxes</span>
+            </label>
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Count Products
+          </button>
+        </form>
+        <div id="count-result" class="mt-4"></div>
+      </div>
+
+      <!-- Batch Count -->
+      <div id="batch" class="tab-content hidden">
+        <h2 class="text-2xl font-semibold mb-4">Batch Count Products</h2>
+        <form
+          id="batch-count-form"
+          enctype="multipart/form-data"
+          class="bg-white p-6 rounded shadow-md"
+        >
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Images (Max 50)</label
+            >
+            <input
+              type="file"
+              name="images"
+              multiple
+              accept="image/*"
+              class="mt-1 p-2 w-full border rounded"
+              required
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Confidence Threshold (0-1)</label
+            >
+            <input
+              type="number"
+              name="confidence_threshold"
+              step="0.01"
+              min="0"
+              max="1"
+              value="0.5"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700"
+              >Similarity Threshold (0-1)</label
+            >
+            <input
+              type="number"
+              name="similarity_threshold"
+              step="0.01"
+              min="0"
+              max="1"
+              value="0.8"
+              class="mt-1 p-2 w-full border rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input
+                type="checkbox"
+                name="return_visualization"
+                class="form-checkbox"
+              />
+              <span class="ml-2">Return Visualizations</span>
+            </label>
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Batch Count
+          </button>
+        </form>
+        <div id="batch-count-result" class="mt-4"></div>
+      </div>
+
+      <!-- Stats & Export -->
+      <div id="stats" class="tab-content hidden">
+        <h2 class="text-2xl font-semibold mb-4">
+          System Stats & Catalog Export
+        </h2>
+        <div class="mb-4">
+          <button
+            id="get-stats"
+            class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Get System Stats
+          </button>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700"
+            >Export Format</label
+          >
+          <select id="export-format" class="mt-1 p-2 w-full border rounded">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+          <button
+            id="export-catalog"
+            class="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Export Catalog
+          </button>
+        </div>
+        <div id="stats-result" class="bg-white p-6 rounded shadow-md"></div>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
