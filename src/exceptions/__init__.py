@@ -21,3 +21,7 @@ class ConfigurationError(ProductCountingException):
 class APIError(ProductCountingException):
     """Raised when API operations fail"""
     pass
+
+class ValidationError(ProductCountingException):
+    """Base class for validation errors"""
+    pass

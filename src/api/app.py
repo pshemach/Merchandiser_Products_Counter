@@ -19,6 +19,11 @@ from pydantic import BaseModel, Field, validator
 from datetime import datetime
 
 
+log_path = Path("monitoring/logs")
+log_file = log_path / "system_log.log"
+# Setup logging
+setup_logging(log_level="INFO", log_file=log_file)
+
 logger = logging.getLogger(__name__)
 
 class ProductCountingAPI:
@@ -29,9 +34,10 @@ class ProductCountingAPI:
         self.config = config or {}
         self.app = None
         self.temp_dir = Path(tempfile.mkdtemp(prefix="product_counting_"))
-        self.results_dir = self.temp_dir / "results"
+        # self.results_dir = self.temp_dir / "results"
+        self.results_dir = Path("results")
         self.results_dir.mkdir(exist_ok=True)
-        
+        self.system.load_system_state(self.results_dir)
         self._create_app()
     
     def _create_app(self) -> FastAPI:
@@ -73,6 +79,8 @@ class ProductCountingAPI:
         
         # Add dependency injection
         def get_system():
+            if self.system is None:
+                raise HTTPException(status_code=500, detail="System not initialized")
             return self.system
         
         def get_results_dir():

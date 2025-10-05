@@ -3,341 +3,1908 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Merchandiser Products Counter</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/style.css" />
+    <title>Product Counting System</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .tab {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .tab:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .tab.active {
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .tab-content {
+        display: none;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .file-input-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-input-label {
+        display: block;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 2px dashed #667eea;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .file-input-label:hover {
+        background: #e7eaff;
+        border-color: #764ba2;
+      }
+
+      .preview-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .preview-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .preview-item img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+      }
+
+      .btn {
+        padding: 12px 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-right: 10px;
+        margin-top: 10px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+      }
+
+      .btn-small {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+      }
+
+      .results-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .product-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+      }
+
+      .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+
+      .stat-box h3 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+      }
+
+      .stat-box p {
+        opacity: 0.9;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .slider-container {
+        margin: 20px 0;
+      }
+
+      .slider {
+        width: 100%;
+        margin: 10px 0;
+      }
+
+      .slider-value {
+        display: inline-block;
+        margin-left: 10px;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .checkbox-group {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .visualization-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .visualization-container img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Results Table Styles */
+      .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .results-table th,
+      .results-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .results-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .results-table tr:nth-child(even) {
+        background: #f9f9f9;
+      }
+
+      .results-table tr:hover {
+        background: #e7eaff;
+      }
+
+      .results-table-container {
+        overflow-x: auto;
+        margin-top: 15px;
+      }
+
+      /* Manage Products Table Styles */
+      .manage-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .manage-table th,
+      .manage-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .manage-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .manage-table tr:nth-child(even) {
+        background: #f9f9f9;
+      }
+
+      .manage-table tr:hover {
+        background: #e7eaff;
+      }
+
+      .manage-table-container {
+        overflow-x: auto;
+        margin-top: 15px;
+      }
+
+      .download-csv-btn {
+        background: #28a745;
+        padding: 8px 16px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+
+      .download-csv-btn:hover {
+        background: #218838;
+        transform: none;
+      }
+
+      .download-csv-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      th {
+        background: #f8f9fa;
+        font-weight: 600;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      /* Modal Styles for View Product */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease;
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8f9fa;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        color: #333;
+      }
+
+      .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: #000;
+        text-decoration: none;
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .modal-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .modal-details p {
+        margin: 5px 0;
+        color: #333;
+      }
+
+      /* Cleaned: Modal Images (Uncropped, Full Visible) */
+      .modal-images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .modal-images img {
+        width: auto;
+        height: 180px;
+        max-width: 180px;
+        object-fit: contain; /* Full image, no crop */
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #f9f9f9;
+        border: 2px solid transparent;
+      }
+
+      .modal-images img:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border-color: #667eea;
+      }
+
+      .no-images {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 20px;
+      }
+
+      /* Lightbox Styles */
+      .lightbox {
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+        cursor: zoom-in;
+      }
+
+      .lightbox img:hover {
+        cursor: zoom-out;
+        transform: scale(1.02);
+      }
+
+      .lightbox-close {
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1002;
+      }
+
+      .lightbox-close:hover {
+        color: #fff;
+      }
+
+      /* Mobile */
+      @media (max-width: 768px) {
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+
+        .header h1 {
+          font-size: 1.8rem;
+        }
+
+        .tabs {
+          flex-direction: column;
+        }
+
+        .tab {
+          width: 100%;
+        }
+
+        .modal-details {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-images {
+          justify-content: flex-start;
+        }
+
+        .modal-images img {
+          max-width: 100%;
+          height: auto;
+          max-height: 250px;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-4">
-      <h1 class="text-3xl font-bold text-center mb-6">
-        Merchandiser Products Counter
-      </h1>
-
-      <!-- Tabs -->
-      <div class="flex justify-center mb-4">
-        <button
-          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          data-tab="create"
-        >
-          Create Product
-        </button>
-        <button
-          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          data-tab="list"
-        >
-          List Products
-        </button>
-        <button
-          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          data-tab="count"
-        >
-          Count Products
-        </button>
-        <button
-          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          data-tab="batch"
-        >
-          Batch Count
-        </button>
-        <button
-          class="tab-button px-4 py-2 mx-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          data-tab="stats"
-        >
-          Stats & Export
-        </button>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🛍️ Product Counting System</h1>
+        <div class="status-badge" id="statusBadge">Checking status...</div>
       </div>
 
-      <!-- Create Product -->
-      <div id="create" class="tab-content hidden">
-        <h2 class="text-2xl font-semibold mb-4">Create New Product</h2>
-        <form
-          id="create-product-form"
-          enctype="multipart/form-data"
-          class="bg-white p-6 rounded shadow-md"
-        >
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Product ID</label
-            >
-            <input
-              type="text"
-              name="product_id"
-              class="mt-1 p-2 w-full border rounded"
-              required
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              name="name"
-              class="mt-1 p-2 w-full border rounded"
-              required
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Category</label
-            >
-            <input
-              type="text"
-              name="category"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Description</label
-            >
-            <textarea
-              name="description"
-              class="mt-1 p-2 w-full border rounded"
-            ></textarea>
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Barcode</label
-            >
-            <input
-              type="text"
-              name="barcode"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Price</label>
-            <input
-              type="number"
-              name="price"
-              step="0.01"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Reference Images</label
-            >
-            <input
-              type="file"
-              name="images"
-              multiple
-              accept="image/*"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Create Product
-          </button>
-        </form>
-        <div id="create-result" class="mt-4"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="count">Count Products</button>
+        <button class="tab" data-tab="batch">Batch Count</button>
+        <button class="tab" data-tab="add">Add Product</button>
+        <button class="tab" data-tab="manage">Manage Products</button>
+        <button class="tab" data-tab="stats">Statistics</button>
       </div>
 
-      <!-- List Products -->
-      <div id="list" class="tab-content hidden">
-        <h2 class="text-2xl font-semibold mb-4">Product Catalog</h2>
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"
-            >Filter by Category</label
+      <div id="count" class="tab-content active">
+        <h2>Count Products in Image</h2>
+
+        <div class="slider-container">
+          <label
+            >Confidence Threshold:
+            <span class="slider-value" id="confValue">0.5</span></label
           >
           <input
-            type="text"
-            id="category-filter"
-            class="mt-1 p-2 w-full border rounded"
+            type="range"
+            class="slider"
+            id="confThreshold"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.5"
           />
         </div>
-        <div id="products-list" class="bg-white p-6 rounded shadow-md"></div>
-      </div>
 
-      <!-- Count Products -->
-      <div id="count" class="tab-content hidden">
-        <h2 class="text-2xl font-semibold mb-4">Count Products in Image</h2>
-        <form
-          id="count-form"
-          enctype="multipart/form-data"
-          class="bg-white p-6 rounded shadow-md"
-        >
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Image</label>
-            <input
-              type="file"
-              name="image"
-              accept="image/*"
-              class="mt-1 p-2 w-full border rounded"
-              required
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Confidence Threshold (0-1)</label
-            >
-            <input
-              type="number"
-              name="confidence_threshold"
-              step="0.01"
-              min="0"
-              max="1"
-              value="0.5"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Similarity Threshold (0-1)</label
-            >
-            <input
-              type="number"
-              name="similarity_threshold"
-              step="0.01"
-              min="0"
-              max="1"
-              value="0.8"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="inline-flex items-center">
-              <input
-                type="checkbox"
-                name="return_visualization"
-                class="form-checkbox"
-              />
-              <span class="ml-2">Return Visualization</span>
-            </label>
-          </div>
-          <div class="mb-4">
-            <label class="inline-flex items-center">
-              <input
-                type="checkbox"
-                name="return_all_detections"
-                class="form-checkbox"
-              />
-              <span class="ml-2">Return All Detections</span>
-            </label>
-          </div>
-          <div class="mb-4">
-            <label class="inline-flex items-center">
-              <input
-                type="checkbox"
-                name="return_bounding_boxes"
-                class="form-checkbox"
-              />
-              <span class="ml-2">Return Bounding Boxes</span>
-            </label>
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+        <div class="slider-container">
+          <label
+            >Similarity Threshold:
+            <span class="slider-value" id="simValue">0.8</span></label
           >
-            Count Products
-          </button>
-        </form>
-        <div id="count-result" class="mt-4"></div>
-      </div>
-
-      <!-- Batch Count -->
-      <div id="batch" class="tab-content hidden">
-        <h2 class="text-2xl font-semibold mb-4">Batch Count Products</h2>
-        <form
-          id="batch-count-form"
-          enctype="multipart/form-data"
-          class="bg-white p-6 rounded shadow-md"
-        >
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Images (Max 50)</label
-            >
-            <input
-              type="file"
-              name="images"
-              multiple
-              accept="image/*"
-              class="mt-1 p-2 w-full border rounded"
-              required
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Confidence Threshold (0-1)</label
-            >
-            <input
-              type="number"
-              name="confidence_threshold"
-              step="0.01"
-              min="0"
-              max="1"
-              value="0.5"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700"
-              >Similarity Threshold (0-1)</label
-            >
-            <input
-              type="number"
-              name="similarity_threshold"
-              step="0.01"
-              min="0"
-              max="1"
-              value="0.8"
-              class="mt-1 p-2 w-full border rounded"
-            />
-          </div>
-          <div class="mb-4">
-            <label class="inline-flex items-center">
-              <input
-                type="checkbox"
-                name="return_visualization"
-                class="form-checkbox"
-              />
-              <span class="ml-2">Return Visualizations</span>
-            </label>
-          </div>
-          <button
-            type="submit"
-            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Batch Count
-          </button>
-        </form>
-        <div id="batch-count-result" class="mt-4"></div>
-      </div>
-
-      <!-- Stats & Export -->
-      <div id="stats" class="tab-content hidden">
-        <h2 class="text-2xl font-semibold mb-4">
-          System Stats & Catalog Export
-        </h2>
-        <div class="mb-4">
-          <button
-            id="get-stats"
-            class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Get System Stats
-          </button>
+          <input
+            type="range"
+            class="slider"
+            id="simThreshold"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.8"
+          />
         </div>
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700"
-            >Export Format</label
+
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="returnViz" checked />
+            <span>Show Visualization</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="returnDetections" />
+            <span>Return All Detections</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="returnBbox" />
+            <span>Return Bounding Boxes</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <div class="file-input-wrapper">
+            <input type="file" id="countImage" accept="image/*" />
+            <label for="countImage" class="file-input-label"
+              >📸 Click to upload image</label
+            >
+          </div>
+          <div class="preview-container" id="countPreview"></div>
+        </div>
+
+        <button class="btn" id="countBtn">Count Products</button>
+
+        <div class="loading" id="countLoading">
+          <div class="spinner"></div>
+          <p>Processing image...</p>
+        </div>
+
+        <div id="countResults"></div>
+      </div>
+
+      <div id="batch" class="tab-content">
+        <h2>Batch Count Products</h2>
+
+        <div class="slider-container">
+          <label
+            >Confidence Threshold:
+            <span class="slider-value" id="batchConfValue">0.5</span></label
           >
-          <select id="export-format" class="mt-1 p-2 w-full border rounded">
-            <option value="json">JSON</option>
-            <option value="csv">CSV</option>
+          <input
+            type="range"
+            class="slider"
+            id="batchConfThreshold"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.5"
+          />
+        </div>
+
+        <div class="slider-container">
+          <label
+            >Similarity Threshold:
+            <span class="slider-value" id="batchSimValue">0.8</span></label
+          >
+          <input
+            type="range"
+            class="slider"
+            id="batchSimThreshold"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.8"
+          />
+        </div>
+
+        <div class="form-group">
+          <div class="file-input-wrapper">
+            <input type="file" id="batchImages" accept="image/*" multiple />
+            <label for="batchImages" class="file-input-label"
+              >📸 Click to upload multiple images (max 50)</label
+            >
+          </div>
+          <div class="preview-container" id="batchPreview"></div>
+        </div>
+
+        <button class="btn" id="batchBtn">Process Batch</button>
+
+        <div class="loading" id="batchLoading">
+          <div class="spinner"></div>
+          <p>Processing batch...</p>
+        </div>
+
+        <div id="batchResults"></div>
+      </div>
+
+      <div id="add" class="tab-content">
+        <h2>Add New Product</h2>
+        <form id="addProductForm">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Product ID *</label>
+              <input type="text" id="productId" required />
+            </div>
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" id="productName" required />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Category</label>
+              <input
+                type="text"
+                id="category"
+                placeholder="e.g., Beverages, Snacks"
+              />
+            </div>
+            <div class="form-group">
+              <label>Price</label>
+              <input type="number" step="0.01" id="price" placeholder="0.00" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Barcode</label>
+            <input type="text" id="barcode" />
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="description" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="file-input-wrapper">
+              <input
+                type="file"
+                id="refImages"
+                accept="image/*"
+                multiple
+                required
+              />
+              <label for="refImages" class="file-input-label"
+                >📸 Upload reference images (required) *</label
+              >
+            </div>
+            <div class="preview-container" id="refPreview"></div>
+          </div>
+
+          <button type="submit" class="btn">Add Product</button>
+        </form>
+
+        <div class="loading" id="addLoading">
+          <div class="spinner"></div>
+          <p>Adding product...</p>
+        </div>
+
+        <div id="addResults"></div>
+      </div>
+
+      <div id="manage" class="tab-content">
+        <h2>Manage Products</h2>
+
+        <div class="form-group">
+          <label>Filter by Category</label>
+          <select id="categoryFilter">
+            <option value="">All Categories</option>
           </select>
-          <button
-            id="export-catalog"
-            class="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Export Catalog
-          </button>
         </div>
-        <div id="stats-result" class="bg-white p-6 rounded shadow-md"></div>
+
+        <button class="btn" id="refreshProductsBtn">Refresh Products</button>
+        <button class="btn btn-secondary" id="exportJsonBtn">
+          Export JSON
+        </button>
+        <button class="btn btn-secondary" id="exportCsvBtn">Export CSV</button>
+
+        <div class="loading" id="manageLoading">
+          <div class="spinner"></div>
+          <p>Loading products...</p>
+        </div>
+
+        <div id="productsList"></div>
+      </div>
+
+      <div id="stats" class="tab-content">
+        <h2>System Statistics</h2>
+        <button class="btn" id="refreshStatsBtn">Refresh Statistics</button>
+
+        <div class="loading" id="statsLoading">
+          <div class="spinner"></div>
+          <p>Loading statistics...</p>
+        </div>
+
+        <div id="statsContent"></div>
       </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <!-- Modal for View Product -->
+    <div id="productModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalProductName"></h3>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="modal-details">
+            <p><strong>ID:</strong> <span id="modalProductId"></span></p>
+            <p><strong>Category:</strong> <span id="modalCategory"></span></p>
+            <p><strong>Price:</strong> <span id="modalPrice"></span></p>
+            <p><strong>Barcode:</strong> <span id="modalBarcode"></span></p>
+            <p>
+              <strong>Description:</strong> <span id="modalDescription"></span>
+            </p>
+            <p><strong>Created:</strong> <span id="modalCreated"></span></p>
+            <p>
+              <strong>Reference Images Count:</strong>
+              <span id="modalRefCount"></span>
+            </p>
+          </div>
+          <div id="modalImagesContainer">
+            <!-- Images will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lightbox for Full Image View (Fixed: Now Included) -->
+    <div id="imageLightbox" class="lightbox" style="display: none">
+      <span class="lightbox-close">&times;</span>
+      <img id="lightboxImg" src="" alt="Full Image" />
+    </div>
+
+    <script>
+      var API_URL = "http://127.0.0.1:8000";
+
+      // Globals for CSV data
+      window.currentCountData = null;
+      window.currentBatchData = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        setupModal(); // Setup modal first (close button)
+        initializeApp();
+      });
+
+      function initializeApp() {
+        setupEventListeners();
+        setupLightbox(); // Safe now with HTML present
+        checkHealth();
+        setInterval(checkHealth, 30000);
+      }
+
+      function setupEventListeners() {
+        var tabs = document.querySelectorAll(".tab");
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            var tabName = this.getAttribute("data-tab");
+            switchTab(tabName);
+          });
+        });
+
+        document
+          .getElementById("confThreshold")
+          .addEventListener("input", function () {
+            document.getElementById("confValue").textContent = this.value;
+          });
+
+        document
+          .getElementById("simThreshold")
+          .addEventListener("input", function () {
+            document.getElementById("simValue").textContent = this.value;
+          });
+
+        document
+          .getElementById("batchConfThreshold")
+          .addEventListener("input", function () {
+            document.getElementById("batchConfValue").textContent = this.value;
+          });
+
+        document
+          .getElementById("batchSimThreshold")
+          .addEventListener("input", function () {
+            document.getElementById("batchSimValue").textContent = this.value;
+          });
+
+        document
+          .getElementById("countImage")
+          .addEventListener("change", function () {
+            previewSingleImage(this);
+          });
+
+        document
+          .getElementById("batchImages")
+          .addEventListener("change", function () {
+            previewMultipleImages(this);
+          });
+
+        document
+          .getElementById("refImages")
+          .addEventListener("change", function () {
+            previewRefImages(this);
+          });
+
+        document
+          .getElementById("countBtn")
+          .addEventListener("click", countProducts);
+        document
+          .getElementById("batchBtn")
+          .addEventListener("click", batchCount);
+        document
+          .getElementById("addProductForm")
+          .addEventListener("submit", addProduct);
+        document
+          .getElementById("refreshProductsBtn")
+          .addEventListener("click", loadProducts);
+        document
+          .getElementById("categoryFilter")
+          .addEventListener("change", loadProducts);
+        document
+          .getElementById("exportJsonBtn")
+          .addEventListener("click", function () {
+            exportCatalog("json");
+          });
+        document
+          .getElementById("exportCsvBtn")
+          .addEventListener("click", function () {
+            exportCatalog("csv");
+          });
+        document
+          .getElementById("refreshStatsBtn")
+          .addEventListener("click", loadStats);
+      }
+
+      // Setup modal close events (Fixed: Runs before lightbox, no conflicts)
+      function setupModal() {
+        var modal = document.getElementById("productModal");
+        if (!modal) return; // Guard
+
+        var closeBtn = document.getElementsByClassName("close")[0];
+        if (closeBtn) {
+          closeBtn.onclick = function () {
+            modal.style.display = "none";
+          };
+        }
+
+        // Modal-specific overlay close
+        modal.onclick = function (event) {
+          if (event.target == modal) {
+            modal.style.display = "none";
+          }
+        };
+
+        // Close on Esc (shared, but safe)
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && modal.style.display === "block") {
+            modal.style.display = "none";
+          }
+        });
+      }
+
+      function checkHealth() {
+        fetch(API_URL + "/health")
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            var badge = document.getElementById("statusBadge");
+            if (data.status === "healthy") {
+              badge.textContent =
+                "✓ System Healthy | " + data.catalog_size + " Products";
+              badge.style.background = "rgba(76, 175, 80, 0.8)";
+            } else {
+              badge.textContent = "✗ System Unhealthy";
+              badge.style.background = "rgba(244, 67, 54, 0.8)";
+            }
+          })
+          .catch(function (error) {
+            var badge = document.getElementById("statusBadge");
+            badge.textContent = "✗ Connection Error";
+            badge.style.background = "rgba(244, 67, 54, 0.8)";
+            console.error("Health check failed:", error);
+          });
+      }
+
+      function switchTab(tabName) {
+        console.log("Switching to tab:", tabName);
+
+        var allTabs = document.querySelectorAll(".tab");
+        allTabs.forEach(function (tab) {
+          tab.classList.remove("active");
+        });
+
+        var allContents = document.querySelectorAll(".tab-content");
+        allContents.forEach(function (content) {
+          content.classList.remove("active");
+        });
+
+        var activeTab = document.querySelector(
+          '.tab[data-tab="' + tabName + '"]'
+        );
+        var activeContent = document.getElementById(tabName);
+
+        if (activeTab) {
+          activeTab.classList.add("active");
+        }
+        if (activeContent) {
+          activeContent.classList.add("active");
+        }
+
+        if (tabName === "manage") {
+          loadProducts();
+        }
+        if (tabName === "stats") {
+          loadStats();
+        }
+      }
+
+      function previewSingleImage(input) {
+        var preview = document.getElementById("countPreview");
+        preview.innerHTML = "";
+
+        if (input.files && input.files[0]) {
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            var div = document.createElement("div");
+            div.className = "preview-item";
+            div.innerHTML = '<img src="' + e.target.result + '">';
+            preview.appendChild(div);
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+
+      function previewMultipleImages(input) {
+        var preview = document.getElementById("batchPreview");
+        preview.innerHTML = "";
+
+        if (input.files) {
+          Array.from(input.files).forEach(function (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+              var div = document.createElement("div");
+              div.className = "preview-item";
+              div.innerHTML = '<img src="' + e.target.result + '">';
+              preview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+
+      function previewRefImages(input) {
+        var preview = document.getElementById("refPreview");
+        preview.innerHTML = "";
+
+        if (input.files) {
+          Array.from(input.files).forEach(function (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+              var div = document.createElement("div");
+              div.className = "preview-item";
+              div.innerHTML = '<img src="' + e.target.result + '">';
+              preview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+
+      function countProducts() {
+        var imageInput = document.getElementById("countImage");
+        if (!imageInput.files.length) {
+          alert("Please select an image");
+          return;
+        }
+
+        var formData = new FormData();
+        formData.append("image", imageInput.files[0]);
+        formData.append(
+          "confidence_threshold",
+          document.getElementById("confThreshold").value
+        );
+        formData.append(
+          "similarity_threshold",
+          document.getElementById("simThreshold").value
+        );
+        formData.append(
+          "return_visualization",
+          document.getElementById("returnViz").checked
+        );
+        formData.append(
+          "return_all_detections",
+          document.getElementById("returnDetections").checked
+        );
+        formData.append(
+          "return_bounding_boxes",
+          document.getElementById("returnBbox").checked
+        );
+
+        document.getElementById("countLoading").classList.add("active");
+        document.getElementById("countResults").innerHTML = "";
+
+        fetch(API_URL + "/count", {
+          method: "POST",
+          body: formData,
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.error) {
+              document.getElementById("countResults").innerHTML =
+                '<div class="alert alert-error">Error: ' +
+                data.error +
+                "</div>";
+            } else {
+              window.currentCountData = null;
+              displayCountResults(data);
+              if (data.product_counts && data.product_counts.length > 0) {
+                window.currentCountData = data.product_counts;
+              }
+            }
+          })
+          .catch(function (error) {
+            document.getElementById("countResults").innerHTML =
+              '<div class="alert alert-error">Error: ' +
+              error.message +
+              "</div>";
+            console.error("Count error:", error);
+          })
+          .finally(function () {
+            document.getElementById("countLoading").classList.remove("active");
+          });
+      }
+
+      function displayCountResults(data) {
+        var html = '<div class="results-section">';
+
+        html += '<div class="grid-2">';
+        html +=
+          '<div class="stat-box"><h3>' +
+          data.summary.total_products_detected +
+          "</h3><p>Products Detected</p></div>";
+        html +=
+          '<div class="stat-box"><h3>' +
+          data.summary.unique_products_detected +
+          "</h3><p>Unique Products</p></div>";
+        html += "</div>";
+
+        html +=
+          "<p><strong>Processing Time:</strong> " +
+          data.processing_time.toFixed(2) +
+          "s</p>";
+        html +=
+          "<p><strong>Detection Rate:</strong> " +
+          (data.summary.detection_rate * 100).toFixed(1) +
+          "%</p>";
+
+        if (data.visualization_url) {
+          html += '<div class="visualization-container">';
+          html += "<h3>Detection Visualization</h3>";
+          html +=
+            '<img src="/' + data.visualization_url + '" alt="Visualization">';
+          html += "</div>";
+        }
+
+        if (data.product_counts && data.product_counts.length > 0) {
+          html += "<h3>Product Counts</h3>";
+          html += '<div class="results-table-container">';
+          html += '<table class="results-table">';
+          html +=
+            "<thead><tr><th>Product Name</th><th>Count</th><th>Avg Confidence (%)</th></tr></thead>";
+          html += "<tbody>";
+          data.product_counts.forEach(function (product) {
+            html += "<tr>";
+            html += "<td>" + product.product_name + "</td>";
+            html += "<td>" + product.count + "</td>";
+            html +=
+              "<td>" + (product.avg_confidence * 100).toFixed(1) + "</td>";
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+          html += "</div>";
+          html +=
+            '<button class="btn download-csv-btn" onclick="downloadCountCSV()">Download CSV</button>';
+        } else {
+          html += "<p>No products detected.</p>";
+        }
+
+        html += "</div>";
+        document.getElementById("countResults").innerHTML = html;
+      }
+
+      function downloadCountCSV() {
+        var productCounts = window.currentCountData;
+        if (!productCounts || productCounts.length === 0) {
+          alert("No data available for download.");
+          return;
+        }
+
+        var csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Product Name,Count,Avg Confidence (%)\n";
+
+        productCounts.forEach(function (product) {
+          csvContent +=
+            '"' +
+            product.product_name.replace(/"/g, '""') +
+            '",' +
+            product.count +
+            "," +
+            (product.avg_confidence * 100).toFixed(1) +
+            "\n";
+        });
+
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "product_counts_" + Date.now() + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      function batchCount() {
+        var imageInput = document.getElementById("batchImages");
+        if (!imageInput.files.length) {
+          alert("Please select at least one image");
+          return;
+        }
+
+        if (imageInput.files.length > 50) {
+          alert("Maximum 50 images allowed");
+          return;
+        }
+
+        var formData = new FormData();
+        Array.from(imageInput.files).forEach(function (file) {
+          formData.append("images", file);
+        });
+        formData.append(
+          "confidence_threshold",
+          document.getElementById("batchConfThreshold").value
+        );
+        formData.append(
+          "similarity_threshold",
+          document.getElementById("batchSimThreshold").value
+        );
+
+        document.getElementById("batchLoading").classList.add("active");
+        document.getElementById("batchResults").innerHTML = "";
+
+        fetch(API_URL + "/count/batch", {
+          method: "POST",
+          body: formData,
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.error) {
+              document.getElementById("batchResults").innerHTML =
+                '<div class="alert alert-error">Error: ' +
+                data.error +
+                "</div>";
+            } else {
+              window.currentBatchData = null;
+              displayBatchResults(data);
+              if (
+                data.aggregated_product_counts &&
+                data.aggregated_product_counts.length > 0
+              ) {
+                window.currentBatchData = data.aggregated_product_counts;
+              }
+            }
+          })
+          .catch(function (error) {
+            document.getElementById("batchResults").innerHTML =
+              '<div class="alert alert-error">Error: ' +
+              error.message +
+              "</div>";
+            console.error("Batch error:", error);
+          })
+          .finally(function () {
+            document.getElementById("batchLoading").classList.remove("active");
+          });
+      }
+
+      function displayBatchResults(data) {
+        var html = '<div class="results-section">';
+
+        html += "<h3>Batch Summary</h3>";
+        html += '<div class="grid-2">';
+        html +=
+          '<div class="stat-box"><h3>' +
+          data.total_images +
+          "</h3><p>Total Images</p></div>";
+        html +=
+          '<div class="stat-box"><h3>' +
+          data.aggregated_summary.total_products_detected +
+          "</h3><p>Total Products</p></div>";
+        html += "</div>";
+
+        html +=
+          "<p><strong>Successful:</strong> " +
+          data.successful_counts +
+          " | <strong>Failed:</strong> " +
+          data.failed_counts +
+          "</p>";
+        html +=
+          "<p><strong>Total Processing Time:</strong> " +
+          data.total_processing_time.toFixed(2) +
+          "s</p>";
+
+        if (
+          data.aggregated_product_counts &&
+          data.aggregated_product_counts.length > 0
+        ) {
+          html += "<h3>Aggregated Product Counts</h3>";
+          html += '<div class="results-table-container">';
+          html += '<table class="results-table">';
+          html +=
+            "<thead><tr><th>Product Name</th><th>Total Count</th><th>Avg Confidence (%)</th></tr></thead>";
+          html += "<tbody>";
+          data.aggregated_product_counts.forEach(function (product) {
+            html += "<tr>";
+            html += "<td>" + product.product_name + "</td>";
+            html += "<td>" + product.count + "</td>";
+            html +=
+              "<td>" + (product.avg_confidence * 100).toFixed(1) + "</td>";
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+          html += "</div>";
+          html +=
+            '<button class="btn download-csv-btn" onclick="downloadBatchCSV()">Download CSV</button>';
+        } else {
+          html += "<p>No products detected across batch.</p>";
+        }
+
+        html += "</div>";
+        document.getElementById("batchResults").innerHTML = html;
+      }
+
+      function downloadBatchCSV() {
+        var aggregatedProductCounts = window.currentBatchData;
+        if (!aggregatedProductCounts || aggregatedProductCounts.length === 0) {
+          alert("No data available for download.");
+          return;
+        }
+
+        var csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Product Name,Total Count,Avg Confidence (%)\n";
+
+        aggregatedProductCounts.forEach(function (product) {
+          csvContent +=
+            '"' +
+            product.product_name.replace(/"/g, '""') +
+            '",' +
+            product.count +
+            "," +
+            (product.avg_confidence * 100).toFixed(1) +
+            "\n";
+        });
+
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute(
+          "download",
+          "batch_product_counts_" + Date.now() + ".csv"
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      function addProduct(event) {
+        event.preventDefault();
+
+        var formData = new FormData();
+        formData.append(
+          "product_id",
+          document.getElementById("productId").value
+        );
+        formData.append("name", document.getElementById("productName").value);
+        formData.append("category", document.getElementById("category").value);
+        formData.append("price", document.getElementById("price").value);
+        formData.append("barcode", document.getElementById("barcode").value);
+        formData.append(
+          "description",
+          document.getElementById("description").value
+        );
+
+        var images = document.getElementById("refImages").files;
+        Array.from(images).forEach(function (file) {
+          formData.append("images", file);
+        });
+
+        document.getElementById("addLoading").classList.add("active");
+        document.getElementById("addResults").innerHTML = "";
+
+        fetch(API_URL + "/products", {
+          method: "POST",
+          body: formData,
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.error) {
+              document.getElementById("addResults").innerHTML =
+                '<div class="alert alert-error">Error: ' +
+                data.error +
+                "</div>";
+            } else {
+              document.getElementById("addResults").innerHTML =
+                '<div class="alert alert-success">Product "' +
+                data.name +
+                '" added successfully!</div>';
+              document.getElementById("addProductForm").reset();
+              document.getElementById("refPreview").innerHTML = "";
+              checkHealth();
+            }
+          })
+          .catch(function (error) {
+            document.getElementById("addResults").innerHTML =
+              '<div class="alert alert-error">Error: ' +
+              error.message +
+              "</div>";
+            console.error("Add product error:", error);
+          })
+          .finally(function () {
+            document.getElementById("addLoading").classList.remove("active");
+          });
+      }
+
+      function loadProducts() {
+        var category = document.getElementById("categoryFilter").value;
+        var url = category
+          ? API_URL + "/products?category=" + category
+          : API_URL + "/products";
+
+        document.getElementById("manageLoading").classList.add("active");
+        document.getElementById("productsList").innerHTML = "";
+
+        fetch(url)
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (products) {
+            displayProducts(products);
+          })
+          .catch(function (error) {
+            document.getElementById("productsList").innerHTML =
+              '<div class="alert alert-error">Error: ' +
+              error.message +
+              "</div>";
+            console.error("Load products error:", error);
+          })
+          .finally(function () {
+            document.getElementById("manageLoading").classList.remove("active");
+          });
+      }
+
+      // Display as table
+      function displayProducts(products) {
+        if (products.length === 0) {
+          document.getElementById("productsList").innerHTML =
+            "<p>No products found.</p>";
+          return;
+        }
+
+        var html = '<div class="manage-table-container">';
+        html += '<table class="manage-table">';
+        html +=
+          "<thead><tr><th>Product Name</th><th>ID</th><th>Category</th><th>Price</th><th>Ref Images</th><th>Embeddings</th><th>Actions</th></tr></thead>";
+        html += "<tbody>";
+        products.forEach(function (product) {
+          html += "<tr>";
+          html += "<td>" + product.name + "</td>";
+          html += "<td>" + product.product_id + "</td>";
+          html += "<td>" + (product.category || "N/A") + "</td>";
+          html +=
+            "<td>" + (product.price ? "$" + product.price : "N/A") + "</td>";
+          html += "<td>" + product.reference_images_count + "</td>";
+          html += "<td>" + product.embedding_indices_count + "</td>";
+          html += "<td>";
+          html += '<div class="action-buttons">';
+          html +=
+            '<button class="btn btn-small" onclick="viewProduct(\'' +
+            product.product_id +
+            "')\">View</button>";
+          html +=
+            '<button class="btn btn-small btn-danger" onclick="deleteProduct(\'' +
+            product.product_id +
+            "')\">Delete</button>";
+          html += "</div>";
+          html += "</td>";
+          html += "</tr>";
+        });
+        html += "</tbody></table>";
+        html += "</div>";
+        document.getElementById("productsList").innerHTML = html;
+
+        var categories = [];
+        products.forEach(function (p) {
+          if (p.category && categories.indexOf(p.category) === -1) {
+            categories.push(p.category);
+          }
+        });
+
+        var select = document.getElementById("categoryFilter");
+        var currentValue = select.value;
+        select.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(function (cat) {
+          select.innerHTML +=
+            '<option value="' + cat + '">' + cat + "</option>";
+        });
+        select.value = currentValue;
+      }
+
+      // Show modal with details and images (Fixed: Path normalization)
+      function viewProduct(productId) {
+        fetch(API_URL + "/products/" + productId)
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (product) {
+            if (product.error) {
+              alert("Error loading product details");
+              return;
+            }
+
+            // Populate modal details
+            document.getElementById("modalProductName").textContent =
+              product.name;
+            document.getElementById("modalProductId").textContent =
+              product.product_id;
+            document.getElementById("modalCategory").textContent =
+              product.category || "N/A";
+            document.getElementById("modalPrice").textContent = product.price
+              ? "$" + product.price
+              : "N/A";
+            document.getElementById("modalBarcode").textContent =
+              product.barcode || "N/A";
+            document.getElementById("modalDescription").textContent =
+              product.description || "N/A";
+            document.getElementById("modalCreated").textContent = new Date(
+              product.created_at
+            ).toLocaleDateString();
+            document.getElementById("modalRefCount").textContent =
+              product.reference_images_count;
+
+            // Handle images
+            var imagesContainer = document.getElementById(
+              "modalImagesContainer"
+            );
+            if (
+              product.reference_images &&
+              product.reference_images.length > 0
+            ) {
+              var imagesHtml = '<div class="modal-images">';
+              product.reference_images.forEach(function (imagePath) {
+                // Fixed: Normalize path (replace \ with /, ensure subdir slash)
+                var normalizedPath = imagePath
+                  .replace(/\\/g, "/")
+                  .replace(/^(.*?)\/?(.*)$/, "$1/$2"); // Ensures / between subdir/filename
+                var fullUrl =
+                  API_URL + "/data/reference_images/" + normalizedPath;
+                imagesHtml +=
+                  '<img src="' +
+                  fullUrl +
+                  '" alt="Reference Image" ' +
+                  "onerror=\"this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';" +
+                  " onclick=\"openLightbox('" +
+                  fullUrl +
+                  "')\">"; // Use normalized fullUrl
+              });
+              imagesHtml += "</div>";
+              imagesContainer.innerHTML = imagesHtml;
+            } else {
+              imagesContainer.innerHTML =
+                '<div class="no-images">No reference images available.</div>';
+            }
+
+            // Show modal
+            var modal = document.getElementById("productModal");
+            modal.style.display = "block";
+          })
+          .catch(function (error) {
+            alert("Error: " + error.message);
+            console.error("View product error:", error);
+          });
+      }
+
+      function deleteProduct(productId) {
+        if (
+          !confirm("Are you sure you want to delete product " + productId + "?")
+        ) {
+          return;
+        }
+
+        fetch(API_URL + "/products/" + productId, {
+          method: "DELETE",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.error) {
+              alert("Error: " + data.error);
+            } else {
+              alert("Product deleted successfully");
+              loadProducts();
+              checkHealth();
+            }
+          })
+          .catch(function (error) {
+            alert("Error: " + error.message);
+            console.error("Delete product error:", error);
+          });
+      }
+
+      function loadStats() {
+        document.getElementById("statsLoading").classList.add("active");
+        document.getElementById("statsContent").innerHTML = "";
+
+        fetch(API_URL + "/stats")
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (stats) {
+            displayStats(stats);
+          })
+          .catch(function (error) {
+            document.getElementById("statsContent").innerHTML =
+              '<div class="alert alert-error">Error: ' +
+              error.message +
+              "</div>";
+            console.error("Load stats error:", error);
+          })
+          .finally(function () {
+            document.getElementById("statsLoading").classList.remove("active");
+          });
+      }
+
+      function displayStats(stats) {
+        var html = '<div class="results-section">';
+
+        html += "<h3>System Information</h3>";
+        html += '<div class="grid-2">';
+        html +=
+          '<div class="stat-box"><h3>' +
+          (stats.system_info.is_initialized ? "Yes" : "No") +
+          "</h3><p>System Initialized</p></div>";
+        html +=
+          '<div class="stat-box"><h3>' +
+          (stats.system_info.models_loaded ? "Yes" : "No") +
+          "</h3><p>Models Loaded</p></div>";
+        html += "</div>";
+
+        html += "<h3>Catalog Statistics</h3>";
+        html += '<div class="grid-2">';
+        html +=
+          '<div class="stat-box"><h3>' +
+          stats.catalog_stats.total_products +
+          "</h3><p>Total Products</p></div>";
+        html +=
+          '<div class="stat-box"><h3>' +
+          stats.catalog_stats.total_embeddings +
+          "</h3><p>Total Embeddings</p></div>";
+        html += "</div>";
+
+        if (stats.catalog_stats.products_by_category) {
+          html += "<h3>Products by Category</h3>";
+          html +=
+            "<table><thead><tr><th>Category</th><th>Count</th></tr></thead><tbody>";
+          for (var category in stats.catalog_stats.products_by_category) {
+            html +=
+              "<tr><td>" +
+              category +
+              "</td><td>" +
+              stats.catalog_stats.products_by_category[category] +
+              "</td></tr>";
+          }
+          html += "</tbody></table>";
+        }
+
+        html += "<h3>Performance Statistics</h3>";
+        if (stats.performance_stats.object_detector) {
+          var od = stats.performance_stats.object_detector;
+          html += "<h4>Object Detector</h4>";
+          html +=
+            "<p><strong>Total Inferences:</strong> " +
+            (od.total_inferences || 0) +
+            "</p>";
+          html +=
+            "<p><strong>Avg Inference Time:</strong> " +
+            (od.avg_inference_time
+              ? od.avg_inference_time.toFixed(3) + "s"
+              : "N/A") +
+            "</p>";
+        }
+
+        if (stats.performance_stats.embedding_extractor) {
+          var ee = stats.performance_stats.embedding_extractor;
+          html += "<h4>Embedding Extractor</h4>";
+          html +=
+            "<p><strong>Total Extractions:</strong> " +
+            (ee.total_extractions || 0) +
+            "</p>";
+          html +=
+            "<p><strong>Avg Extraction Time:</strong> " +
+            (ee.avg_extraction_time
+              ? ee.avg_extraction_time.toFixed(3) + "s"
+              : "N/A") +
+            "</p>";
+        }
+
+        if (stats.performance_stats.similarity_matcher) {
+          var sm = stats.performance_stats.similarity_matcher;
+          html += "<h4>Similarity Matcher</h4>";
+          html +=
+            "<p><strong>Total Matches:</strong> " +
+            (sm.total_matches || 0) +
+            "</p>";
+          html +=
+            "<p><strong>Avg Match Time:</strong> " +
+            (sm.avg_match_time ? sm.avg_match_time.toFixed(3) + "s" : "N/A") +
+            "</p>";
+        }
+
+        html +=
+          "<p><strong>Last Updated:</strong> " +
+          new Date(stats.last_updated).toLocaleString() +
+          "</p>";
+        html += "</div>";
+
+        document.getElementById("statsContent").innerHTML = html;
+      }
+
+      function exportCatalog(format) {
+        fetch(API_URL + "/catalog/export?format=" + format)
+          .then(function (response) {
+            if (response.ok) {
+              return response.blob();
+            }
+            throw new Error("Export failed");
+          })
+          .then(function (blob) {
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "catalog_export_" + Date.now() + "." + format;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          })
+          .catch(function (error) {
+            alert("Error: " + error.message);
+            console.error("Export catalog error:", error);
+          });
+      }
+
+      // Lightbox functions (Fixed: Guards added)
+      function openLightbox(imageSrc) {
+        var lightbox = document.getElementById("imageLightbox");
+        var lightboxImg = document.getElementById("lightboxImg");
+        if (lightbox && lightboxImg) {
+          lightboxImg.src = imageSrc;
+          lightbox.style.display = "flex";
+        }
+      }
+
+      function closeLightbox() {
+        var lightbox = document.getElementById("imageLightbox");
+        if (lightbox) {
+          lightbox.style.display = "none";
+        }
+      }
+
+      // Setup lightbox events (Fixed: Null guards)
+      function setupLightbox() {
+        var lightbox = document.getElementById("imageLightbox");
+        if (!lightbox) return; // Guard if HTML missing
+
+        var closeBtn = document.getElementsByClassName("lightbox-close")[0];
+        if (closeBtn) {
+          closeBtn.onclick = closeLightbox;
+        }
+
+        lightbox.onclick = function (event) {
+          if (
+            event.target == lightbox ||
+            event.target == document.getElementById("lightboxImg")
+          ) {
+            closeLightbox();
+          }
+        };
+
+        // Close on Esc (already handled in setupModal for modal)
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && lightbox.style.display === "flex") {
+            closeLightbox();
+          }
+        });
+      }
+    </script>
   </body>
 </html>

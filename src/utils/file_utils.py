@@ -87,3 +87,28 @@ def list_images(directory: Path, extensions: List[str]=None) -> List[Path]:
         
     logger.info(f"Found {len(images)} images in {directory}")
     return sorted(images)
+
+def convert_paths_to_str(obj):
+    if isinstance(obj, dict):
+        return {k: convert_paths_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_paths_to_str(v) for v in obj]
+    elif isinstance(obj, Path):
+        return str(obj)
+    else:
+        return obj
+    
+# Base directory for reference images (adjust if your project root differs)
+BASE_IMAGES_DIR = Path.cwd() / "data" / "reference_images"
+
+def get_relative_image_path(full_path: str) -> str:
+    """Convert absolute path to relative path from BASE_IMAGES_DIR."""
+    try:
+        path_obj = Path(full_path)
+        if path_obj.is_absolute():
+            relative = path_obj.relative_to(BASE_IMAGES_DIR)
+            return str(relative)
+        return full_path  # Already relative
+    except ValueError:
+        # Fallback if path doesn't match base
+        return os.path.basename(full_path)  # Just filename as last resort

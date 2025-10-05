@@ -1,46 +1,51 @@
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))  # Add project root to sys.path
-
-from flask import Flask, jsonify, request, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_file, send_from_directory, render_template
 from flask_cors import CORS
 from flask_compress import Compress
+from werkzeug.utils import secure_filename
+from werkzeug.exceptions import HTTPException
+import os
+import sys
+import time
+import uuid
 import logging
-from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Any
 import tempfile
 import shutil
-import uuid
-import time
-from werkzeug.utils import secure_filename
-
+import traceback
+from functools import wraps
+from datetime import datetime
 from src.core.product_counting_system import ProductCountingSystem
+from src.exceptions.api_exceptions import APIError, RequestValidationError, FileUploadError
 from src.utils.logging_utils import setup_logging
-from src.api.schemas import *
+from src.utils.file_utils import convert_paths_to_str
 from config.settings import get_settings
+from src.api.schemas import *
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+# results_dir
+results_dir = Path("results")
+results_dir.mkdir(exist_ok=True)
+
+# Initialize ProductCountingSystem
+settings = get_settings()
+system = ProductCountingSystem(config=settings.dict())
+system.load_system_state(results_dir)
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 setup_logging()
 
 # Initialize Flask app
-app = Flask(__name__, 
+app = Flask(__name__,
             static_folder=str(Path(__file__).parent / 'static'), 
             static_url_path='/static',
-            template_folder=str(Path(__file__).parent / 'templates'))
+            template_folder=str(Path(__file__).parent / 'templates')
+                                )
+
 CORS(app, resources={r"/*": {"origins": "*"}})
 Compress(app)
-
-# Initialize ProductCountingSystem
-settings = get_settings()
-system = ProductCountingSystem(config=settings.dict())
-
-# Temporary directory for results
-temp_dir = Path(tempfile.mkdtemp(prefix="product_counting_"))
-# results_dir = temp_dir / "results"
-results_dir = Path("results")
-results_dir.mkdir(exist_ok=True)
-app.config['RESULTS_DIR'] = str(results_dir)
-system.load_system_state(results_dir)
 # Error handler
 @app.errorhandler(Exception)
 def global_exception_handler(exc):
@@ -49,49 +54,53 @@ def global_exception_handler(exc):
         error="Internal Server Error",
         message=str(exc)
     ).model_dump()), 500
-
-# Serve UI
-@app.route('/', methods=['GET'])
+    
+@app.route('/', methods=["GET"])
 def root():
     return render_template('index.html')
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    try:
-        stats = system.get_system_statistics()
-        return jsonify({
-            "status": "healthy" if system.is_initialized else "unhealthy",
-            "timestamp": datetime.now().isoformat(),
-            "system_info": stats["system"],
-            "catalog_size": stats["catalog"]["total_products"]
-        })
+@app.route('/health', methods=["GET"])
+def health():
+    try: 
+        stats =system.get_system_statistics()
+        response = {
+                "status": "healthy" if system.is_initialized else "unhealthy",
+                "timestamp": datetime.now().isoformat(),
+                "system_info": stats["system"],
+                "catalog_size": stats["catalog"]["total_products"]
+        }
+        
+        return jsonify(response)
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return jsonify({"error": f"Service unhealthy: {str(e)}"}), 503
-
-@app.route('/products', methods=['POST'])
+    
+@app.route('/products', methods=["POST"])
 def create_product():
     try:
         data = request.form.to_dict()
         request_data = ProductCreateRequest(**data)
-        images = request.files.getlist('images')
-        
+        images = request.files.getlist("images")
+            
         if not images:
             return jsonify({"error": "At least one reference image is required"}), 400
         
         image_paths = []
-        product_dir = Path("data/reference_images") / request_data.product_id
-        product_dir.mkdir(parents=True, exist_ok=True)
+        image_dir = Path("data/reference_images") / request_data.product_id
+        image_dir.mkdir(parents=True, exist_ok=True)
         
+        # loop through files
         for i, image_file in enumerate(images):
-            if not image_file.content_type.startswith('image/'):
-                return jsonify({"error": f"Invalid file type: {image_file.content_type}"}), 400
+            # Verify image
+            if not image_file.content_type.startswith("image/"):
+                return jsonify({"error": f"Invalid file type: {image_file.content_type}"})
+
             filename = secure_filename(image_file.filename)
-            file_extension = Path(filename).suffix or '.jpg'
-            image_path = product_dir / f"ref_{i}{file_extension}"
+            file_extension = Path(filename).suffix or ".jpg"
+            image_path = image_dir / f"ref_{i}{file_extension}"
             image_file.save(image_path)
             image_paths.append(str(image_path))
-        
+            
         product_info = system.add_product_to_catalog(
             product_id=request_data.product_id,
             name=request_data.name,
@@ -106,25 +115,24 @@ def create_product():
         system.save_system_state(results_dir)
         
         response = ProductResponse(
-            product_id=product_info.product_id,
-            name=product_info.name,
-            category=product_info.category,
-            description=product_info.description,
-            barcode=product_info.barcode,
-            price=product_info.price,
-            reference_images_count=len(product_info.reference_images),
-            embedding_indices_count=len(product_info.embedding_indices),
-            created_at=product_info.created_at,
-            updated_at=product_info.updated_at,
-            metadata=product_info.metadata
-        )
+                product_id=product_info.product_id,
+                name=product_info.name,
+                category=product_info.category,
+                description=product_info.description,
+                barcode=product_info.barcode,
+                price=product_info.price,
+                reference_images_count=len(product_info.reference_images),
+                embedding_indices_count=len(product_info.embedding_indices),
+                created_at=product_info.created_at,
+                updated_at=product_info.updated_at,
+                metadata=product_info.metadata
+            )    
         
         return jsonify(response.model_dump())
-    
     except Exception as e:
         logger.error(f"Failed to create product: {e}")
         return jsonify({"error": str(e)}), 400
-
+    
 @app.route('/products', methods=['GET'])
 def list_products():
     category = request.args.get('category')
@@ -138,6 +146,7 @@ def list_products():
                 description=p.description,
                 barcode=p.barcode,
                 price=p.price,
+                reference_images=p.reference_images,
                 reference_images_count=len(p.reference_images),
                 embedding_indices_count=len(p.embedding_indices),
                 created_at=p.created_at,
@@ -150,7 +159,7 @@ def list_products():
     except Exception as e:
         logger.error(f"Failed to list products: {e}")
         return jsonify({"error": str(e)}), 500
-
+    
 @app.route('/products/<product_id>', methods=['GET'])
 def get_product(product_id):
     try:
@@ -164,6 +173,7 @@ def get_product(product_id):
             description=product.description,
             barcode=product.barcode,
             price=product.price,
+            reference_images=product.reference_images,
             reference_images_count=len(product.reference_images),
             embedding_indices_count=len(product.embedding_indices),
             created_at=product.created_at,
@@ -174,7 +184,7 @@ def get_product(product_id):
     except Exception as e:
         logger.error(f"Failed to get product {product_id}: {e}")
         return jsonify({"error": str(e)}), 500
-
+    
 @app.route('/products/<product_id>', methods=['DELETE'])
 def delete_product(product_id):
     try:
@@ -184,8 +194,8 @@ def delete_product(product_id):
     except Exception as e:
         logger.error(f"Failed to delete product {product_id}: {e}")
         return jsonify({"error": str(e)}), 400
-
-@app.route('/count', methods=['POST'])
+    
+@app.route("/count", methods=["POST"])
 def count_products():
     confidence_threshold = float(request.form.get('confidence_threshold', 0.5))
     similarity_threshold = float(request.form.get('similarity_threshold', 0.8))
@@ -195,7 +205,7 @@ def count_products():
     
     if 'image' not in request.files:
         return jsonify({"error": "Image file is required"}), 400
-    
+
     image = request.files['image']
     if not image.content_type.startswith('image/'):
         return jsonify({"error": f"Invalid file type: {image.content_type}"}), 400
@@ -204,11 +214,15 @@ def count_products():
         image_id = str(uuid.uuid4())
         filename = secure_filename(image.filename)
         file_extension = Path(filename).suffix or '.jpg'
-        image_path = Path(app.config['RESULTS_DIR']) / f"input_{image_id}{file_extension}"
+        
+        image_dir = Path("outputs")
+        image_dir.mkdir(exist_ok=True)
+        
+        image_path = image_dir / f"input_{image_id}{file_extension}"
         image.save(image_path)
         
         result = system.count_products_in_image(
-            image_path=str(image_path),
+            str(image_path),
             confidence_threshold=confidence_threshold,
             similarity_threshold=similarity_threshold
         )
@@ -240,7 +254,10 @@ def count_products():
                 count=count,
                 confidence_scores=details['confidence_scores'],
                 avg_confidence=avg_confidence,
-                bounding_boxes=details['bounding_boxes'] if return_bounding_boxes else None
+                bounding_boxes=[
+                    [int(round(coord)) for coord in bbox]
+                    for bbox in details['bounding_boxes']
+                    ] if return_bounding_boxes else None
             )
             product_count_list.append(product_count_detail)
             product_counts_simple[product_id] = count
@@ -263,33 +280,33 @@ def count_products():
         
         visualization_url = None
         if return_visualization:
-            viz_path = Path(app.config['RESULTS_DIR']) / f"viz_{image_id}.jpg"
-            system.visualize_results(str(image_path), result, str(viz_path))
-            visualization_url = f"/results/viz_{image_id}.jpg"
+            viz_path = image_dir / f"viz_{image_id}.jpg"
+            system.visualize_results(str(image_path), result, viz_path)
+            visualization_url = str(viz_path)
         
         all_detections = None
         unmatched_detections_list = None
         if return_all_detections:
             all_detections = [
                 DetectionInfo(
-                    bbox=list(detection.bbox),
+                    bbox=list(map(int, detection.bbox)),
                     confidence=detection.confidence,
                     class_id=detection.class_id,
                     class_name=detection.class_name,
-                    area=detection.area,
+                    area=int(detection.area),
                     matched_product=match_info['match'].product_id,
                     similarity_score=match_info['match'].similarity
                 ).model_dump()
                 for match_info in result.matched_detections
             ]
             if hasattr(result, 'unmatched_detections'):
-                unattached_detections_list = [
+                unmatched_detections_list = [
                     DetectionInfo(
-                        bbox=list(detection.bbox),
+                        bbox=list(map(int, detection.bbox)),
                         confidence=detection.confidence,
                         class_id=detection.class_id,
                         class_name=detection.class_name,
-                        area=detection.area,
+                        area=int(detection.area),
                         matched_product=None,
                         similarity_score=None
                     ).model_dump()
@@ -310,7 +327,7 @@ def count_products():
         )
         
         return jsonify(response.model_dump())
-    
+        
     except Exception as e:
         logger.error(f"Failed to process image: {e}")
         return jsonify({"error": str(e)}), 400
@@ -333,7 +350,7 @@ def batch_count_products():
             image_id = f"batch_{int(time.time())}_{i}"
             filename = secure_filename(image_file.filename)
             file_extension = Path(filename).suffix or '.jpg'
-            image_path = Path(app.config['RESULTS_DIR']) / f"input_{image_id}{file_extension}"
+            image_path = results_dir / f"input_{image_id}{file_extension}"
             image_file.save(image_path)
             
             result = system.count_products_in_image(
@@ -460,7 +477,7 @@ def batch_count_products():
     except Exception as e:
         logger.error(f"Batch processing failed: {e}")
         return jsonify({"error": str(e)}), 400
-
+       
 @app.route('/stats', methods=['GET'])
 def get_system_stats():
     try:
@@ -475,7 +492,9 @@ def get_system_stats():
             },
             last_updated=datetime.now().isoformat()
         )
-        return jsonify(response.model_dump())
+        # Convert all Path objects to str before jsonify
+        response_dict = convert_paths_to_str(response.model_dump())
+        return jsonify(response_dict)
     except Exception as e:
         logger.error(f"Failed to get system stats: {e}")
         return jsonify({"error": str(e)}), 500
@@ -488,24 +507,16 @@ def export_catalog():
             return jsonify({"error": "Format must be 'json' or 'csv'"}), 400
         timestamp = int(time.time())
         filename = f"catalog_export_{timestamp}.{format_type}"
-        export_path = Path(app.config['RESULTS_DIR']) / filename
+        export_path = results_dir / filename
         system.catalog_manager.export_catalog(str(export_path), format_type)
-        return send_from_directory(app.config['RESULTS_DIR'], filename, as_attachment=True)
+        return send_from_directory(results_dir, filename, as_attachment=True)
     except Exception as e:
         logger.error(f"Catalog export failed: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/results/<path:filename>', methods=['GET'])
 def serve_result(filename):
-    return send_from_directory(app.config['RESULTS_DIR'], filename)
+    return send_from_directory(results_dir, filename)  # Serve from results_dir
 
 if __name__ == "__main__":
     app.run(host=settings.api_host, port=settings.api_port, debug=settings.debug)
-
-# Cleanup on shutdown
-def cleanup():
-    if temp_dir.exists():
-        shutil.rmtree(temp_dir)
-
-import atexit
-atexit.register(cleanup)

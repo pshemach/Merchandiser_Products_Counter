@@ -368,10 +368,11 @@ class ProductCountingSystem:
             
             for i, text in enumerate(summary_text):
                 cv2.putText(vis_image, text, (10, 30 + i * 25),
-                          cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                          cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             
             # Save if requested
             if save_path:
+                save_path = Path(save_path)
                 save_image(vis_image, save_path)
                 logger.info(f"Saved visualization to {save_path}")
             

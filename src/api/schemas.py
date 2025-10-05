@@ -20,6 +20,7 @@ class ProductResponse(BaseModel):
     description: Optional[str]
     barcode: Optional[str]
     price: Optional[float]
+    reference_images: Optional[List[str]] = Field(default_factory=list)
     reference_images_count: int
     embedding_indices_count: int
     created_at: str

@@ -3,15 +3,16 @@ from fastapi.responses import JSONResponse, FileResponse
 import asyncio
 import aiofiles
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import uuid
 import time
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+import logging
 
 from src.core.product_counting_system import ProductCountingSystem
 from src.api.schemas import *
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Dependency injection
@@ -192,28 +193,11 @@ async def delete_product(
 @router.post("/count", response_model=CountingResponse)
 async def count_products(
     image: UploadFile = File(...),
-    confidence_threshold: float = 0.5,
-    similarity_threshold: float = 0.8,
-    return_visualization: bool = False,
-    return_all_detections: bool = False,
-    return_bounding_boxes: bool = False,
+    request: CountingRequest = CountingRequest(),
     system: ProductCountingSystem = Depends(get_system),
     results_dir: Path = Depends(get_results_dir)
 ):
-    """
-    Count products in a single image with detailed per-product information
-    
-    Args:
-        image: Image file to process
-        confidence_threshold: Detection confidence threshold (0.0-1.0)
-        similarity_threshold: Product matching threshold (0.0-1.0)
-        return_visualization: Include visualization image URL in response
-        return_all_detections: Include all detection details in response
-        return_bounding_boxes: Include bounding box coordinates in response
-    
-    Returns:
-        Detailed counting results with per-product counts and confidence scores
-    """
+    """Count products in a single image"""
     
     # Validate file type
     if not image.content_type.startswith('image/'):
@@ -232,126 +216,27 @@ async def count_products(
         # Process image
         result = system.count_products_in_image(
             image_path=image_path,
-            confidence_threshold=confidence_threshold,
-            similarity_threshold=similarity_threshold
-        )
-        
-        # Build detailed product counts
-        product_details = {}
-        
-        for match_info in result.matched_detections:
-            detection = match_info['detection']
-            match = match_info['match']
-            product_id = match.product_id
-            
-            if product_id not in product_details:
-                product_details[product_id] = {
-                    'product_id': product_id,
-                    'product_name': match.product_name,
-                    'confidence_scores': [],
-                    'bounding_boxes': []
-                }
-            
-            product_details[product_id]['confidence_scores'].append(match.similarity)
-            
-            if return_bounding_boxes:
-                product_details[product_id]['bounding_boxes'].append(list(detection.bbox))
-        
-        # Create ProductCountDetail objects
-        product_count_list = []
-        product_counts_simple = {}
-        
-        for product_id, details in product_details.items():
-            count = len(details['confidence_scores'])
-            avg_confidence = sum(details['confidence_scores']) / count if count > 0 else 0
-            
-            product_count_detail = ProductCountDetail(
-                product_id=details['product_id'],
-                product_name=details['product_name'],
-                count=count,
-                confidence_scores=details['confidence_scores'],
-                avg_confidence=avg_confidence,
-                bounding_boxes=details['bounding_boxes'] if return_bounding_boxes else None
-            )
-            
-            product_count_list.append(product_count_detail)
-            product_counts_simple[product_id] = count
-        
-        # Sort by count (descending)
-        product_count_list.sort(key=lambda x: x.count, reverse=True)
-        
-        # Create summary
-        total_products = sum(pc.count for pc in product_count_list)
-        unique_products = len(product_count_list)
-        total_detections = result.total_detections
-        unmatched = len(result.unmatched_detections) if hasattr(result, 'unmatched_detections') else 0
-        detection_rate = total_products / total_detections if total_detections > 0 else 0
-        
-        summary = CountingSummary(
-            total_products_detected=total_products,
-            unique_products_detected=unique_products,
-            total_objects_detected=total_detections,
-            unmatched_objects=unmatched,
-            detection_rate=detection_rate
+            confidence_threshold=request.confidence_threshold,
+            similarity_threshold=request.similarity_threshold
         )
         
         # Create visualization if requested
         visualization_url = None
-        if return_visualization:
+        if request.return_visualization:
             viz_path = results_dir / f"viz_{image_id}.jpg"
             system.visualize_results(image_path, result, viz_path)
             visualization_url = f"/results/viz_{image_id}.jpg"
         
-        # Prepare all detections if requested
-        all_detections = None
-        unmatched_detections_list = None
-        
-        if return_all_detections:
-            all_detections = []
-            
-            for match_info in result.matched_detections:
-                detection = match_info['detection']
-                match = match_info['match']
-                
-                all_detections.append(DetectionInfo(
-                    bbox=list(detection.bbox),
-                    confidence=detection.confidence,
-                    class_id=detection.class_id,
-                    class_name=detection.class_name,
-                    area=detection.area,
-                    matched_product=match.product_id,
-                    similarity_score=match.similarity
-                ))
-            
-            # Add unmatched detections
-            if hasattr(result, 'unmatched_detections'):
-                unmatched_detections_list = []
-                for detection in result.unmatched_detections:
-                    unmatched_detections_list.append(DetectionInfo(
-                        bbox=list(detection.bbox),
-                        confidence=detection.confidence,
-                        class_id=detection.class_id,
-                        class_name=detection.class_name,
-                        area=detection.area,
-                        matched_product=None,
-                        similarity_score=None
-                    ))
-        
-        # Create response
-        response = CountingResponse(
+        return CountingResponse(
             image_name=image.filename,
             processing_time=result.processing_time,
-            summary=summary,
-            product_counts=product_count_list,
-            product_counts_simple=product_counts_simple,
-            all_detections=all_detections,
-            unmatched_detections=unmatched_detections_list,
-            visualization_url=visualization_url,
-            errors=result.errors if hasattr(result, 'errors') else [],
-            warnings=[]
+            total_detections=result.total_detections,
+            matched_detections_count=len(result.matched_detections),
+            unmatched_detections_count=len(result.unmatched_detections),
+            product_counts=result.product_counts,
+            errors=result.errors,
+            visualization_url=visualization_url
         )
-        
-        return response
         
     except Exception as e:
         logger.error(f"Failed to process image: {e}")
@@ -360,33 +245,26 @@ async def count_products(
 @router.post("/count/batch", response_model=BatchCountingResponse)
 async def batch_count_products(
     images: List[UploadFile] = File(...),
-    confidence_threshold: float = 0.5,
-    similarity_threshold: float = 0.8,
-    return_visualization: bool = False,
-    return_all_detections: bool = False,
+    request: CountingRequest = CountingRequest(),
     background_tasks: BackgroundTasks = None,
     system: ProductCountingSystem = Depends(get_system),
     results_dir: Path = Depends(get_results_dir)
 ):
-    """
-    Count products in multiple images with aggregated results
+    """Count products in multiple images"""
     
-    Returns detailed per-product counts aggregated across all images
-    """
-    
-    if len(images) > 50:
+    if len(images) > 50:  # Limit batch size
         raise HTTPException(status_code=400, detail="Maximum 50 images per batch")
     
     try:
-        # Process all images
-        all_results = []
+        # Save all uploaded images
+        image_paths = []
+        image_names = []
         
-        for image_file in images:
+        for i, image_file in enumerate(images):
             if not image_file.content_type.startswith('image/'):
                 continue
             
-            # Process individual image (reuse single image endpoint logic)
-            image_id = f"batch_{int(time.time())}_{len(all_results)}"
+            image_id = f"batch_{int(time.time())}_{i}"
             file_extension = Path(image_file.filename).suffix or '.jpg'
             image_path = results_dir / f"input_{image_id}{file_extension}"
             
@@ -394,157 +272,56 @@ async def batch_count_products(
                 content = await image_file.read()
                 await f.write(content)
             
-            # Process
-            result = system.count_products_in_image(
-                image_path=image_path,
-                confidence_threshold=confidence_threshold,
-                similarity_threshold=similarity_threshold
-            )
-            
-            # Build detailed product counts
-            product_details = {}
-            
-            for match_info in result.matched_detections:
-                detection = match_info['detection']
-                match = match_info['match']
-                product_id = match.product_id
-                
-                if product_id not in product_details:
-                    product_details[product_id] = {
-                        'product_id': product_id,
-                        'product_name': match.product_name,
-                        'confidence_scores': [],
-                        'bounding_boxes': []
-                    }
-                
-                product_details[product_id]['confidence_scores'].append(match.similarity)
-            
-            # Create product count list for this image
-            product_count_list = []
-            product_counts_simple = {}
-            
-            for product_id, details in product_details.items():
-                count = len(details['confidence_scores'])
-                avg_confidence = sum(details['confidence_scores']) / count if count > 0 else 0
-                
-                product_count_detail = ProductCountDetail(
-                    product_id=details['product_id'],
-                    product_name=details['product_name'],
-                    count=count,
-                    confidence_scores=details['confidence_scores'],
-                    avg_confidence=avg_confidence
-                )
-                
-                product_count_list.append(product_count_detail)
-                product_counts_simple[product_id] = count
-            
-            # Create summary for this image
-            total_products = sum(pc.count for pc in product_count_list)
-            
-            summary = CountingSummary(
-                total_products_detected=total_products,
-                unique_products_detected=len(product_count_list),
-                total_objects_detected=result.total_detections,
-                unmatched_objects=len(getattr(result, 'unmatched_detections', [])),
-                detection_rate=total_products / result.total_detections if result.total_detections > 0 else 0
-            )
-            
-            # Create counting response for this image
-            counting_response = CountingResponse(
-                image_name=image_file.filename,
-                processing_time=result.processing_time,
-                summary=summary,
-                product_counts=product_count_list,
-                product_counts_simple=product_counts_simple,
-                errors=getattr(result, 'errors', [])
-            )
-            
-            all_results.append(counting_response)
+            image_paths.append(image_path)
+            image_names.append(image_file.filename)
         
-        # Aggregate results across all images
-        aggregated_products = {}
-        total_processing_time = 0
+        # Process images
+        results = system.batch_count_products(
+            image_paths=image_paths,
+            confidence_threshold=request.confidence_threshold,
+            similarity_threshold=request.similarity_threshold
+        )
+        
+        # Create response
+        counting_responses = []
         successful_counts = 0
         failed_counts = 0
+        total_processing_time = 0
+        summary = {}
         
-        # Aggregate statistics
-        total_products_all = 0
-        total_objects_all = 0
-        total_unmatched_all = 0
-        
-        for counting_response in all_results:
-            total_processing_time += counting_response.processing_time
+        for result, image_name in zip(results, image_names):
+            total_processing_time += result.processing_time
             
-            if counting_response.errors:
+            if result.errors:
                 failed_counts += 1
             else:
                 successful_counts += 1
-            
-            # Aggregate summaries
-            total_products_all += counting_response.summary.total_products_detected
-            total_objects_all += counting_response.summary.total_objects_detected
-            total_unmatched_all += counting_response.summary.unmatched_objects
-            
-            # Aggregate product counts
-            for product_detail in counting_response.product_counts:
-                product_id = product_detail.product_id
                 
-                if product_id not in aggregated_products:
-                    aggregated_products[product_id] = {
-                        'product_id': product_id,
-                        'product_name': product_detail.product_name,
-                        'total_count': 0,
-                        'confidence_scores': []
-                    }
-                
-                aggregated_products[product_id]['total_count'] += product_detail.count
-                aggregated_products[product_id]['confidence_scores'].extend(product_detail.confidence_scores)
-        
-        # Create aggregated product count details
-        aggregated_product_list = []
-        total_product_counts_simple = {}
-        unique_products_all = len(aggregated_products)
-        
-        for product_id, details in aggregated_products.items():
-            total_count = details['total_count']
-            avg_confidence = sum(details['confidence_scores']) / len(details['confidence_scores']) if details['confidence_scores'] else 0
+                # Update summary
+                for product_id, count in result.product_counts.items():
+                    if product_id in summary:
+                        summary[product_id] += count
+                    else:
+                        summary[product_id] = count
             
-            aggregated_detail = ProductCountDetail(
-                product_id=details['product_id'],
-                product_name=details['product_name'],
-                count=total_count,
-                confidence_scores=details['confidence_scores'],
-                avg_confidence=avg_confidence
-            )
-            
-            aggregated_product_list.append(aggregated_detail)
-            total_product_counts_simple[product_id] = total_count
+            counting_responses.append(CountingResponse(
+                image_name=image_name,
+                processing_time=result.processing_time,
+                total_detections=result.total_detections,
+                matched_detections_count=len(result.matched_detections),
+                unmatched_detections_count=len(result.unmatched_detections),
+                product_counts=result.product_counts,
+                errors=result.errors
+            ))
         
-        # Sort by count (descending)
-        aggregated_product_list.sort(key=lambda x: x.count, reverse=True)
-        
-        # Create aggregated summary
-        aggregated_summary = CountingSummary(
-            total_products_detected=total_products_all,
-            unique_products_detected=unique_products_all,
-            total_objects_detected=total_objects_all,
-            unmatched_objects=total_unmatched_all,
-            detection_rate=total_products_all / total_objects_all if total_objects_all > 0 else 0
-        )
-        
-        # Create batch response
-        batch_response = BatchCountingResponse(
+        return BatchCountingResponse(
             total_images=len(images),
             successful_counts=successful_counts,
             failed_counts=failed_counts,
             total_processing_time=total_processing_time,
-            results=all_results,
-            aggregated_summary=aggregated_summary,
-            aggregated_product_counts=aggregated_product_list,
-            total_product_counts=total_product_counts_simple
+            results=counting_responses,
+            summary=summary
         )
-        
-        return batch_response
         
     except Exception as e:
         logger.error(f"Batch processing failed: {e}")
@@ -598,6 +375,3 @@ async def export_catalog(
     except Exception as e:
         logger.error(f"Catalog export failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-import logging
-logger = logging.getLogger(__name__)
