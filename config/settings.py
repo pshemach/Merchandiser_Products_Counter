@@ -143,7 +143,7 @@ class Settings(BaseSettings):
     
     # Similarity Matching Configuration
     similarity_threshold: float = Field(
-        default=0.8,
+        default=0.7,
         ge=0.0, le=1.0,
         description="Product similarity threshold"
     )
@@ -207,7 +207,7 @@ class Settings(BaseSettings):
     )
     
     api_port: int = Field(
-        default=8000,
+        default=8010,
         ge=1024, le=65535,
         description="API port",
         alias="API_PORT"
