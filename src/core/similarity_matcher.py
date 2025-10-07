@@ -151,7 +151,7 @@ class SimilarityMatcher:
                 if self.index.ntotal > 0:
                     training_data = self.index.reconstruct_n(0, self.index.ntotal)
                     self.index.train(training_data)
-                    logger.info("✅ Index training completed")
+                    logger.info("Index training completed")
                 else:
                     logger.warning("No data available for training")
             
