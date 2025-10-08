@@ -95,8 +95,17 @@ class CatalogBuilder:
                             self.logger.info(f"Skipping existing product: {product_id}")
                             continue
                         
+                        db_dict ={
+                                    '1000':'7-oil-red', '1001':'7-oil-green', '1002':'7-oil-black', '1003':'7-oil-brown', 
+                                    '1004':'7-oil-yellow', '1005':'7-oil-orange', '1006':'fathima-kesha-wardhani', 
+                                    '1007':'nawarathna-oil-box-green','1008':'nawarathna-oil-box-red', '1009':'janet-hair-fall-red', 
+                                    '1010':'janet-hair-fall-blue', '1011':'bread-growth', '1012':'7-oil-white', '1013':'castor-oil', '1014':'hair-care-oil-blue', '1015':'jasmin-coconut-hari-oil',
+                                    '1016':'chandanalepa-box', '1017':'pears-baby-cream','1018':'parachuti-hail-oil', '1019':'amla-hurbal-hail-oil',
+                                    '1020':'janet-hair-fall-green'
+                                       
+                                        }
                         # Prepare product name
-                        product_name = product_id.replace('_', ' ').replace('-', ' ').title()
+                        product_name = db_dict.get(product_id) if product_id in db_dict.keys() else product_id
                         
                         # Add product to catalog
                         self.logger.info(f"Processing product: {product_id}")

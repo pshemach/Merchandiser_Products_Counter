@@ -4,6 +4,7 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple, Union
 from pathlib import Path
 import logging
+import shutil
 
 from src.core.object_detector import Detection, YOLODetector
 from src.core.embedding_extractor import ImprovedEmbeddingExtractor
@@ -480,3 +481,86 @@ class ProductCountingSystem:
         except Exception as e:
             logger.error(f"Failed to load system state: {e}")
             raise
+
+    def remove_product_from_catalog(self, product_id: str, save_state_dir: Optional[Path] = None) -> None:
+        """Remove a product and rebuild similarity index and extractor catalog embeddings.
+
+        This performs a coordinated removal: it removes the product from the catalog,
+        then rebuilds the FAISS index and the embedding extractor's catalog embeddings
+        from the remaining products' reference images. Rebuilding from the original
+        reference images avoids the complexity of trying to delete vectors from
+        FAISS in-place and keeps the embedding/extractor state consistent.
+        """
+        if not self.is_initialized:
+            raise SystemInitializationError("System not initialized")
+
+        if product_id not in self.catalog_manager.products:
+            raise CatalogError(f"Product not found: {product_id}")
+
+        try:
+            with PerformanceLogger(logger, f"Removing product {product_id} and rebuilding index"):
+                # Attempt to remove product reference image directory from disk
+                try:
+                    product_dir = Path("data/reference_images") / product_id
+                    if product_dir.exists() and product_dir.is_dir():
+                        shutil.rmtree(product_dir)
+                        logger.info(f"Removed product image directory: {product_dir}")
+                except Exception as e:
+                    logger.warning(f"Failed to remove product image directory for {product_id}: {e}")
+
+                # Remove product from catalog manager first (clears category/embeddings_map)
+                self.catalog_manager.remove_product(product_id)
+
+                # Clear similarity matcher and extractor catalog embeddings
+                self.similarity_matcher.clear()
+                # Reset extractor catalog embeddings using provided API
+                self.embedding_extractor.set_catalog_embeddings([])
+
+                # Rebuild index and extractor catalog embeddings from remaining products
+                next_index = 0
+                for pid, pinfo in self.catalog_manager.products.items():
+                    new_indices = []
+                    for img_path in pinfo.reference_images:
+                        try:
+                            image = load_image(img_path)
+                            embedding = self.embedding_extractor.extract_embedding(image)
+
+                            # Add to similarity matcher
+                            self.similarity_matcher.add_embedding(
+                                embedding=embedding,
+                                product_id=pid,
+                                metadata={'name': pinfo.name, 'image_path': img_path}
+                            )
+
+                            # Add to extractor catalog embeddings
+                            self.embedding_extractor.add_catalog_embedding(embedding)
+
+                            # Track embedding index
+                            new_indices.append(next_index)
+                            next_index += 1
+
+                        except Exception as e:
+                            logger.error(f"Failed to re-add reference image {img_path} for product {pid}: {e}")
+                            continue
+
+                    # Update product embedding indices
+                    pinfo.embedding_indices = new_indices
+
+                # Rebuild embeddings_map from product embedding indices
+                self.catalog_manager.embeddings_map = {}
+                for pid, pinfo in self.catalog_manager.products.items():
+                    for idx in pinfo.embedding_indices:
+                        self.catalog_manager.embeddings_map[idx] = pid
+
+                # Update system stats
+                self.system_stats['catalog_size'] = len(self.catalog_manager.products)
+
+                # Optionally save state
+                if save_state_dir:
+                    self.save_system_state(save_state_dir)
+
+                logger.info(f"Product {product_id} removed and index rebuilt. New catalog size: {len(self.catalog_manager.products)}")
+
+        except Exception as e:
+            logger.error(f"Failed to remove product and rebuild: {e}")
+            raise CatalogError(f"Removal failed: {e}")

@@ -199,8 +199,8 @@ def get_product(product_id):
 @app.route('/products/<product_id>', methods=['DELETE'])
 def delete_product(product_id):
     try:
-        system.catalog_manager.remove_product(product_id)
-        system.save_system_state(results_dir)
+        # Use coordinated removal to ensure FAISS index and extractor state are rebuilt
+        system.remove_product_from_catalog(product_id, save_state_dir=results_dir)
         return jsonify({"message": f"Product {product_id} deleted successfully"})
     except Exception as e:
         logger.error(f"Failed to delete product {product_id}: {e}")
