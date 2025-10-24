@@ -207,7 +207,7 @@ class Settings(BaseSettings):
     )
     
     api_port: int = Field(
-        default=8010,
+        default=8575,
         ge=1024, le=65535,
         description="API port",
         alias="API_PORT"
