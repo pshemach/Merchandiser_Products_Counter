@@ -1,0 +1,36 @@
+# Embedding Model Training Configuration
+
+# Model Architecture
+model:
+  embedding_dim: 128 # Dimension of output embeddings
+  freeze_early_layers: true # Freeze ResNet101 early layers, only train layer4 + custom head
+
+# Data Configuration
+data:
+  train_dir: "data/reference_images" # Directory with subdirectories per product class
+  val_dir: null # Optional validation directory
+  augmentation: true # Apply data augmentation during training
+
+# Training Parameters
+training:
+  num_epochs: 30
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  num_workers: 4 # Number of data loading workers
+
+  # Triplet Loss
+  triplet_margin: 1.0 # Margin for triplet loss
+
+  # Learning Rate Scheduler
+  lr_step_size: 10 # Reduce LR every N epochs
+  lr_gamma: 0.1 # Multiply LR by this factor
+
+# Logging and Checkpointing
+logging:
+  checkpoint_dir: "data/models/embedding_models" # Where to save model checkpoints
+  checkpoint_frequency: 5 # Save checkpoint every N epochs
+  tensorboard_dir: "runs/embedding_training" # TensorBoard logs directory
+
+# Hardware
+device: "cuda" # cuda or cpu (auto-detected in training script)

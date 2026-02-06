@@ -1,0 +1,12 @@
+batch_size: 32
+learning_rate: 0.001
+num_epochs: 50
+image_size: [224, 224]
+optimizer: Adam
+loss_function: contrastive_loss
+train_data_path: data/processed/train/
+val_data_path: data/processed/val/
+checkpoint_path: checkpoints/
+log_interval: 10
+save_best_only: true
+seed: 42
